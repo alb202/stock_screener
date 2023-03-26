@@ -41,9 +41,7 @@ def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
 
     if df.empty:
         return fig
-
-    print(df)
-
+    
     fig.add_trace(
         row=1,
         col=1,
@@ -66,14 +64,14 @@ def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
     )
     print("indicators", indicators)
     # y_labels = []
-    for i, v in enumerate(indicators.values()):
+    for i, (k, v) in enumerate(indicators.items()):
         print(i)
         # print(k)
         # y_labels.append(k)
         print(v)
         colorscale = {-1: "red", 0: "lightgrey", 1: "green"}  # [[-1.0, "red"], [0.0, "lightgrey"], [1.0, "green"]]
         trace = go.Bar(
-            # name=v.name,
+            name=k,
             y=[1] * len(v),  # [["Hiekin Ashi"]],
             x=v.Date.tolist(),
             marker={"color": [colorscale[i] for i in v.value.tolist()]},

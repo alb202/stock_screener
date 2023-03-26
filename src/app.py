@@ -61,7 +61,7 @@ def load_default_indicators(config: dict) -> list[dict]:
 
 @app.callback(
     [Output("textarea-info", "value")],
-    [Input("dropdown-symbols", "value")],
+    [Input("radio-symbols", "value")],
     [
         State("store-config", "data"),
         State("store-hdf-path", "data"),
@@ -76,21 +76,18 @@ def load_info(symbol: str, config: dict, path: Path) -> dict:
 
 
 @app.callback(
-    [Output("dropdown-symbols", "options")],
+    [Output("radio-symbols", "options")],
     [
         Input("store-hdf-path", "data"),
         State("store-config", "data"),
         Input("radio-period", "value"),
         Input("checklist-screeners", "value"),
         Input("slider-periods", "value"),
+        Input("radio-trend", "value"),
     ],
 )
 def load_symbols(
-    path: Path,
-    config: dict,
-    period: str,
-    screeners: list[str],
-    screener_lookback: int,
+    path: Path, config: dict, period: str, screeners: list[str], screener_lookback: int, trend: int
 ) -> list[list]:
     """Load the symbols"""
     if path is None or config is None or period is None or screeners is None or screener_lookback is None:
@@ -102,7 +99,8 @@ def load_symbols(
     df = read_hdf(path, key=config.get("config").get("hdf_keys").get("screener_symbols"), mode="r").sort_values(
         "symbol", ascending=True
     )
-    if len(screeners) == 0:
+
+    if len(screeners) == 0 or df.empty:
         return [df.symbol.drop_duplicates().to_list()]
 
     df_signals = load_screener_data(path=path, period=period, lookback=screener_lookback)
@@ -111,23 +109,22 @@ def load_symbols(
         return [df.symbol.drop_duplicates().to_list()]
 
     df_screener_symbols = (
-        Screener()
-        .apply_screeners(screeners=screeners, num_periods=screener_lookback, df=df_signals)
-        .loc[:, ["symbol", "Date"]]
+        Screener().apply_screeners(screeners=screeners, df=df_signals, trend=trend).loc[:, ["symbol", "Date"]]
     )
 
     if not df.empty and not df_screener_symbols.empty and df_screener_symbols is not None and df is not None:
         print(df.columns)
         print(df_screener_symbols.columns)
         df = df.merge(df_screener_symbols, how="inner", on=["symbol"])
-
+    else:
+        return [[]]
     return [df.symbol.sort_values().to_list()]
 
 
 @app.callback(
     [Output("graph-candlestick", "figure")],
     [
-        Input("dropdown-symbols", "value"),
+        Input("radio-symbols", "value"),
         Input("radio-period", "value"),
         Input("radio-candle", "value"),
         Input("checklist-indicators", "value"),

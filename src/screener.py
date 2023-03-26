@@ -6,19 +6,19 @@ class Screener:
         self,
     ):
         pass
-        
 
-    def apply_screeners(self, df: DataFrame, screeners: list[str], num_periods: int = 1) -> DataFrame:
+    def apply_screeners(self, df: DataFrame, screeners: list[str], trend: int = 1) -> DataFrame:
         """Apply screeners"""
         if df is None:
-            # df = self.get_screener_data(period=period, num_periods=num_periods)
             return None
         if "ha" in screeners and df is not None:
-            df = self.ha_streak_screener(df=df)
+            df = self.ha_streak_screener(df=df, trend=trend)
         if "st" in screeners and df is not None:
-            df = self.supertrend_screener(df=df)
+            df = self.supertrend_screener(df=df, trend=trend)
         if "macd" in screeners and df is not None:
-            df = self.macd_screener(df=df)
+            df = self.macd_screener(df=df, trend=trend)
+        if "srsi" in screeners and df is not None:
+            df = self.stoch_rsi_screener(df=df)
         return df
 
     def ha_streak_screener(self, df: DataFrame, min_streak: int = 1, max_streak: int = 2, trend: int = 1) -> DataFrame:
@@ -67,7 +67,7 @@ class Screener:
             .reset_index(drop=True)
         )
 
-    def stoch_rsi_screener(self, df: DataFrame, trend: int = 1, rsi_k_min: int = 60) -> DataFrame:
+    def stoch_rsi_screener(self, df: DataFrame, rsi_k_min: int = 60, trend: int = 1) -> DataFrame:
         """Run the RSI Stochastic screener"""
         cols = ["stochastic_rsi_crossover", "stochastic_rsi_K", "stochastic_rsi_D"]
         if df is None:
@@ -75,11 +75,18 @@ class Screener:
         print(df.columns)
         if any([col for col in cols if col not in df.columns]):
             return None
-        return (
-            df.query(f"stochastic_rsi_crossover == {trend}")
-            .query(f"stochastic_rsi_K >= {rsi_k_min}")
-            .reset_index(drop=True)
-        )
+        if trend == 1:
+            return (
+                df.query(f"stochastic_rsi_crossover == {trend}")
+                .query(f"stochastic_rsi_K >= {rsi_k_min}")
+                .reset_index(drop=True)
+            )
+        else:
+            return (
+                df.query(f"stochastic_rsi_crossover == {trend}")
+                .query(f"stochastic_rsi_K <= {100-rsi_k_min}")
+                .reset_index(drop=True)
+            )
 
 
 # data_path = Path("/Users/ab/Data/stock_data/").absolute()

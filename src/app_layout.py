@@ -15,22 +15,6 @@ def layout() -> dbc.Container:
                 [
                     dbc.Col(
                         [
-                            dcc.Textarea(
-                                id="textarea-info",
-                                readOnly=True,
-                                value="",
-                                wrap="yes",
-                                style={"width": 300, "height": 350},
-                            )
-                        ],
-                        width={"size": 2, "offset": 0},
-                    ),
-                    dbc.Col(
-                        [dcc.Dropdown(id="dropdown-symbols", options=[], searchable=True, value=None)],
-                        width={"size": 1, "offset": 1},
-                    ),
-                    dbc.Col(
-                        [
                             dcc.RadioItems(
                                 id="radio-period",
                                 options={"D": "Daily", "W": "Weekly", "M": "Monthly"},
@@ -64,12 +48,48 @@ def layout() -> dbc.Container:
                     ),
                     dbc.Col(
                         [
+                            dcc.RadioItems(
+                                id="radio-trend",
+                                options={1: "Buy", -1: "Sell"},
+                                value="1",
+                                inline=False,
+                            )
+                        ],
+                        width={"size": 1, "offset": 0},
+                    ),
+                    dbc.Col(
+                        [
                             dcc.Slider(
                                 id="slider-periods",
                                 min=0,
                                 max=15,
                                 step=1,
                                 value=1,
+                            )
+                        ],
+                        width={"size": 2, "offset": 0},
+                    ),
+                    dbc.Col(
+                        [
+                            dcc.RadioItems(
+                                id="radio-symbols",
+                                options=[],
+                                # searchable=True,
+                                value=None,
+                                # maxHeight=600,
+                            )
+                        ],
+                        width={"size": 1, "offset": 1},
+                        style={"overflow-y": "scroll", "overflow-x": "hidden", "height": "350px", "width": 150},
+                    ),
+                    dbc.Col(
+                        [
+                            dcc.Textarea(
+                                id="textarea-info",
+                                readOnly=True,
+                                value="",
+                                wrap="yes",
+                                style={"width": 300, "height": 350},
                             )
                         ],
                         width={"size": 2, "offset": 0},
