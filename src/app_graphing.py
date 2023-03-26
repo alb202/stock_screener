@@ -7,6 +7,7 @@ from pandas import DataFrame
 from numpy import where
 from plotly.graph_objects import Figure
 
+
 USFEDHOLIDAYS = USFederalHolidayCalendar()
 # USFEDHOLIDAYS.merge(GoodFriday, inplace=True)
 MARKET_HOLIDAYS = [
@@ -19,9 +20,19 @@ def clear_figure() -> Figure:
     return []
 
 
-def create_figure(df: DataFrame, symbol: str) -> Figure:
+def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
     """Plot the data on the main graph"""
-    fig = make_subplots(rows=2, cols=1, row_heights=[0.8, 0.18], shared_xaxes=True, vertical_spacing=0.02)
+    if indicators is not None:
+        num_indicators = len(indicators)
+    else:
+        num_indicators = 0
+        indicators = {}
+
+    row_heights = [1] + num_indicators * [0.025] + [0.2]
+    num_rows = 2 + num_indicators
+    i_rows = range(1, num_rows + 1)
+    print("i_rows", i_rows)
+    fig = make_subplots(rows=num_rows, cols=1, row_heights=row_heights, shared_xaxes=True, vertical_spacing=0.005)
 
     fig.update_xaxes(rangebreaks=RANGEBREAKS)
 
@@ -53,15 +64,37 @@ def create_figure(df: DataFrame, symbol: str) -> Figure:
             volume_color > 0, volume_colors.get(1), where(volume_color < 0, volume_colors.get(-1), volume_colors.get(0))
         )
     )
+    print("indicators", indicators)
+    # y_labels = []
+    for i, v in enumerate(indicators.values()):
+        print(i)
+        # print(k)
+        # y_labels.append(k)
+        print(v)
+        colorscale = {-1: "red", 0: "lightgrey", 1: "green"}  # [[-1.0, "red"], [0.0, "lightgrey"], [1.0, "green"]]
+        trace = go.Bar(
+            # name=v.name,
+            y=[1] * len(v),  # [["Hiekin Ashi"]],
+            x=v.Date.tolist(),
+            marker={"color": [colorscale[i] for i in v.value.tolist()]},
+            showlegend=False,
+        )
+        fig.add_trace(
+            trace=trace,
+            row=[i_rows[i] + 1],
+            col=1,
+        )
+        # fig.add_annotation(x=0, y=0, text=f"{k}")
 
     fig.add_trace(
-        row=2,
+        row=i_rows[-1],
         col=1,
         trace=go.Bar(name="Volume", showlegend=False, x=df.Date, marker_color=volume_color, y=df.Volume),
     )
+
     fig.update(layout_xaxis_rangeslider_visible=False)
 
-    fig.update_layout(get_layout_params(symbol=symbol))
+    fig.update_layout(get_layout_params(symbol=symbol, y_axes=i_rows))
 
     # if len(data['prices']['close'] > 0):
     #     _macd = MACD(data=data['prices'][['datetime', 'close']], function=function)
@@ -120,41 +153,40 @@ def create_figure(df: DataFrame, symbol: str) -> Figure:
     return fig
 
 
-def get_layout_params(symbol):
+def get_layout_params(symbol: str, y_axes: list[int]):
     """Create the layout parameters"""
     symbol = symbol if symbol is not None else " "
-    layout = dict(
-        width=1200,
-        height=700,
-        title=symbol,
-        xaxis1=dict(
-            rangeselector=dict(
-                buttons=list(
-                    [
-                        dict(count=5, label="5d", step="day", stepmode="backward"),
-                        dict(count=15, label="15d", step="day", stepmode="backward"),
-                        dict(count=1, label="1m", step="month", stepmode="backward"),
-                        dict(count=3, label="3m", step="month", stepmode="backward"),
-                        dict(count=6, label="6m", step="month", stepmode="backward"),
-                        # dict(count=1, label="YTD", step="year", stepmode="todate"),
-                        dict(count=1, label="1y", step="year", stepmode="backward"),
-                        dict(count=5, label="5y", step="year", stepmode="backward"),
-                        dict(step="all"),
-                    ]
-                )
-            ),
-            type="date",
-            rangeslider=dict(visible=False),
-        ),
-        yaxis1=dict(title=dict(text="Price $ - US Dollars")),
-        yaxis2=dict(title=dict(text="Volume")),
-    )
-    # yaxis5=dict(title=dict(text="Hiekin Ashi")),
-    # yaxis6=dict(title=dict(text="Moving Average Crossover")))
-    return layout
+    layout = {
+        "width": 1400,
+        "height": 800,
+        "title": symbol,
+        "xaxis1": {
+            "rangeselector": {
+                "buttons": [
+                    {"count": 5, "label": "5d", "step": "day", "stepmode": "backward"},
+                    {"count": 15, "label": "15d", "step": "day", "stepmode": "backward"},
+                    {"count": 1, "label": "1m", "step": "month", "stepmode": "backward"},
+                    {"count": 3, "label": "3m", "step": "month", "stepmode": "backward"},
+                    {"count": 6, "label": "6m", "step": "month", "stepmode": "backward"},
+                    # {'count': 1, 'label': "YTD", 'step': "year", 'stepmode': "todate"},
+                    {"count": 1, "label": "1y", "step": "year", "stepmode": "backward"},
+                    {"count": 2, "label": "2y", "step": "year", "stepmode": "backward"},
+                    {"count": 5, "label": "5y", "step": "year", "stepmode": "backward"},
+                    {"step": "all"},
+                ]
+            },
+            "type": "date",
+            "rangeslider": {"visible": False},
+        },
+        "yaxis1": {"title": {"text": "Price $ - US Dollars"}},
+        f"yaxis{y_axes[-1]}": {"title": {"text": "Volume"}},
+    }
 
-    # yaxis3=dict(title=dict(text="MACD")),
-    # yaxis4=dict(title=dict(text="RSI")))
-    # yaxis5=dict(title=dict(text="Hiekin Ashi")),
-    # yaxis6=dict(title=dict(text="Moving Average Crossover")))
+    for i, val in enumerate(y_axes[1:-1]):
+        layout[f"yaxis{val}"] = {
+            "visible": True,
+            "showticklabels": False,
+            # "title": {"text": y_labels[i]}
+        }
+
     return layout

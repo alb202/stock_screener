@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 # from joblib import Parallel, delayed
 # from multiprocessing import cpu_count
 # from typing import Optional
-from ta_lib import bollinger_bands, rsi, macd, natr, supertrend, pattern_recognition
+from ta_lib import *
 from ha import heikin_ashi, heikin_ashi_signals
 from future_calcs import future_max, future_end
 from joblib import Parallel, delayed
@@ -44,15 +44,35 @@ def calculations(df: DataFrame, n_jobs: int = 8, calc_set: str = "D") -> dict[Da
         )
     )
 
+    results["stochastic_rsi"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(stochastic_rsi)(df=df.query(f'symbol == "{symbol}"'))
+            for symbol in tqdm(symbols, desc="stochastic_rsi")
+        )
+    )
+
     results["macd"] = concat(
         Parallel(n_jobs=n_jobs)(
             delayed(macd)(df=df.query(f'symbol == "{symbol}"')) for symbol in tqdm(symbols, desc="macd")
         )
     )
 
-    results["natr"] = concat(
+    results["natr_14"] = concat(
         Parallel(n_jobs=n_jobs)(
             delayed(natr)(df=df.query(f'symbol == "{symbol}"')) for symbol in tqdm(symbols, desc="natr")
+        )
+    )
+
+    results["volume_ema_14"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(natr)(df=df.query(f'symbol == "{symbol}"'), timeperiod=14)
+            for symbol in tqdm(symbols, desc="volume_ema")
+        )
+    )
+
+    results["obv"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(natr)(df=df.query(f'symbol == "{symbol}"')) for symbol in tqdm(symbols, desc="obv")
         )
     )
 

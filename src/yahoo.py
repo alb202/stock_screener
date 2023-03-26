@@ -17,7 +17,7 @@ class PeriodEnum(Enum):
     _6m = "6m"
     _1y = "1y"
     _2y = "2y"
-    _3y = "3y"
+    # _3y = "3y"
     _5y = "5y"
     _10y = "10y"
     max = "max"
@@ -70,6 +70,7 @@ class Yahoo:
                 return df
             except (AttributeError, Exception) as err:
                 print(err)
+                tries += 1
                 pass
         return None
 
@@ -92,6 +93,8 @@ class Yahoo:
 
 
 # a = Yahoo(save_data=False)
+# b = a.get_ticker_data(symbol="CETU", interval="1wk", period="5d")
+# print(b)
 # print(a.format_symbols(["AAPL", "msft", "ntst", "Akdf"]))
 # b = a.get_ticker_info(symbols=["AAPL", "msft"])
 # b = a.get_batch_info(symbols="AAPL MSFT")

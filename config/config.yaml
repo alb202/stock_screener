@@ -2,7 +2,15 @@ config:
   paths:
     hdf_path: /Users/ab/Data/stock_data/store.h5
   hdf_keys: 
-    symbols: /symbols
+    screener_symbols: /DataSymbols
+    symbol_info: /Info
   screeners:
     ha: Heikin Ashi
     st: Supertrend
+    srsi: Stochastic RSI
+    macd: MACD
+  indicators:
+    ha: Heikin Ash
+    st: Suptertrend
+    srsi: Stochastic RSI
+    macd: MACD

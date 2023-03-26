@@ -69,6 +69,14 @@ def load_screener_data(path: Path, period: str, lookback: int = 5) -> DataFrame:
     )
 
 
+def get_symbol_info(path: Path, table_key: str, symbol: str) -> str:
+    if not path or not table_key:
+        return ""
+
+    row = read_hdf(path_or_buf=str(path), key=table_key, mode="r").query(f'symbol == "{symbol}"').iloc[0]
+    return "\n".join([f"{k}: {v}" for k, v in row.to_dict().items()])
+
+
 # def screen_symbols(path: Path, period: str, screeners: list[str], lookback: int) -> list[str]:
 
 #     if 'ha' in screeners:

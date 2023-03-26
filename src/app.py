@@ -2,10 +2,11 @@ from dash import Dash, dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import time
-from app_utilities import load_config, get_candle_data, load_screener_data
+from app_utilities import load_config, get_candle_data, load_screener_data, get_symbol_info
 from app_graphing import create_figure, clear_figure
 from screener import Screener
 from utilities import back_in_time
+from indicators import make_indicators
 
 # import yaml
 from pandas import read_hdf, DataFrame
@@ -30,8 +31,20 @@ app.layout = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(
-                    [dcc.Dropdown(id="dropdown-symbols", options=[], searchable=True, value=None)],
+                    [
+                        dcc.Textarea(
+                            id="textarea-info",
+                            readOnly=True,
+                            value="",
+                            wrap="yes",
+                            style={"width": 300, "height": 350},
+                        )
+                    ],
                     width={"size": 2, "offset": 0},
+                ),
+                dbc.Col(
+                    [dcc.Dropdown(id="dropdown-symbols", options=[], searchable=True, value=None)],
+                    width={"size": 1, "offset": 1},
                 ),
                 dbc.Col(
                     [
@@ -42,7 +55,7 @@ app.layout = dbc.Container(
                             inline=False,
                         )
                     ],
-                    width={"size": 2, "offset": 0},
+                    width={"size": 1, "offset": 0},
                 ),
                 dbc.Col(
                     [
@@ -53,7 +66,7 @@ app.layout = dbc.Container(
                             inline=False,
                         )
                     ],
-                    width={"size": 2, "offset": 0},
+                    width={"size": 1, "offset": 0},
                 ),
                 dbc.Col(
                     [
@@ -76,13 +89,44 @@ app.layout = dbc.Container(
                             value=1,
                         )
                     ],
-                    width={"size": 4, "offset": 0},
+                    width={"size": 2, "offset": 0},
                 ),
                 # dbc.Col([dcc.Loading(id="data-spinner", type="default", children=html.Div(id="data-is-loading"))]),
             ]
         ),
         html.Hr(),
-        dbc.Row([dbc.Col([dcc.Graph(id="graph-candlestick")])]),
+        # dbc.Row(
+        #     [
+        #         dbc.Col(
+        #             [
+        #                 dcc.Textarea(
+        #                     id="textarea-info",
+        #                     readOnly=True,
+        #                     value="",
+        #                     wrap="yes",
+        #                     style={"width": 300, "height": 100},
+        #                 )
+        #             ],
+        #             width={"size": 2, "offset": 0},
+        #         )
+        #     ]
+        # ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Checklist(
+                            id="checklist-indicators",
+                            options=[],
+                            value=[],
+                            inline=False,
+                        )
+                    ],
+                    width={"size": 2, "offset": 0},
+                ),
+                dbc.Col([dcc.Graph(id="graph-candlestick")]),
+            ]
+        ),
     ]
 )
 
@@ -129,6 +173,32 @@ def load_screeners(config: dict) -> list[dict]:
     return [screeners]
 
 
+@app.callback([Output("checklist-indicators", "options")], Input("store-config", "data"))
+def load_indicators(config: dict) -> list[dict]:
+    if not config:
+        return [None]
+    indicators = config.get("config").get("indicators")
+    if not indicators:
+        return [None]
+    return [indicators]
+
+
+@app.callback(
+    [Output("textarea-info", "value")],
+    [Input("dropdown-symbols", "value")],
+    [
+        State("store-config", "data"),
+        State("store-hdf-path", "data"),
+    ],
+)
+def load_info(symbol: str, config: dict, path: Path) -> dict:
+    if not symbol or not config or not path:
+        return [""]
+    return [
+        get_symbol_info(path=path, symbol=symbol, table_key=config.get("config").get("hdf_keys").get("symbol_info"))
+    ]
+
+
 @app.callback(
     [Output("dropdown-symbols", "options")],
     [
@@ -154,7 +224,7 @@ def load_symbols(
     print(path)
     print(config)
 
-    df = read_hdf(path, key=config.get("config").get("hdf_keys").get("symbols"), mode="r").sort_values(
+    df = read_hdf(path, key=config.get("config").get("hdf_keys").get("screener_symbols"), mode="r").sort_values(
         "symbol", ascending=True
     )
     if len(screeners) == 0:
@@ -182,13 +252,20 @@ def load_symbols(
 
 @app.callback(
     [Output("graph-candlestick", "figure")],
-    [Input("dropdown-symbols", "value"), Input("radio-period", "value"), Input("radio-candle", "value")],
+    [
+        Input("dropdown-symbols", "value"),
+        Input("radio-period", "value"),
+        Input("radio-candle", "value"),
+        Input("checklist-indicators", "value"),
+    ],
     [State("store-hdf-path", "data"), State("store-config", "data")],
 )
-def load_plot(symbol: str, period: str, candle: str, path: Path, config: dict) -> list[Figure]:
+def load_plot(symbol: str, period: str, candle: str, indicators: list, path: Path, config: dict) -> list[Figure]:
 
     df = get_candle_data(path=path, symbol=symbol, period=period, candle=candle)
-    fig = create_figure(df=df, symbol=symbol)
+    # indicators = ["ha", "st", "macd", "srsi"]
+    indicators = make_indicators(path=path, period=period, symbol=symbol, indicators=indicators)
+    fig = create_figure(df=df, symbol=symbol, indicators=indicators)
 
     return [fig]
 

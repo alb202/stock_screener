@@ -1,20 +1,33 @@
 import talib
-from pandas import DataFrame, Series, concat
+from pandas import DataFrame, concat
 from ta_utils import validate_columns
-from utilities import generate_week_ids
-from numpy import where, array
-from swifter import swifter, set_defaults
-set_defaults(
-    npartitions=None,
-    dask_threshold=1,
-    scheduler="processes",
-    progress_bar=False,
-    progress_bar_desc=None,
-    allow_dask_on_strings=False,
-    force_parallel=False,
-)
 
-__all__ = ["bollinger_bands", "rsi", "stochastic_rsi", "macd", "natr", "supertrend", "stages", "pattern_recognition"]
+# from utilities import generate_week_ids
+from numpy import where, array
+
+# from swifter import swifter, set_defaults
+# set_defaults(
+#     npartitions=None,
+#     dask_threshold=1,
+#     scheduler="processes",
+#     progress_bar=False,
+#     progress_bar_desc=None,
+#     allow_dask_on_strings=False,
+#     force_parallel=False,
+# )
+
+__all__ = [
+    "bollinger_bands",
+    "rsi",
+    "stochastic_rsi",
+    "macd",
+    "natr",
+    "volume_ema",
+    "obv",
+    "supertrend",
+    # "stages",
+    "pattern_recognition",
+]
 
 
 def bollinger_bands(df: DataFrame, timeperiod: int = 5) -> DataFrame:
@@ -38,7 +51,6 @@ def rsi(df: DataFrame, timeperiod: int = 14) -> DataFrame:
 
     rsi = talib.RSI(df.Close, timeperiod=timeperiod)
     col_name = f"rsi_{timeperiod}"
-    # df[col_name] = rsi
     df = df.assign(**{col_name: rsi})
     return df.loc[:, ["Date", "symbol", col_name]]
 
@@ -53,16 +65,17 @@ def stochastic_rsi(
     fastk, fastd = talib.STOCHRSI(
         df.Close, timeperiod=timeperiod, fastk_period=fastk_period, fastd_period=fastd_period, fastd_matype=fastd_matype
     )
-
-    col_k_name = f"stochastic_rsi_{timeperiod}_{fastk_period}"
-    col_d_name = f"stochastic_rsi_{timeperiod}_{fastd_period}"
+    
     df = df.assign(
         **{
-            col_k_name: col_k_name,
-            col_d_name: fastd,
+            "stochastic_rsi_K": fastk,
+            "stochastic_rsi_D": fastd,
         }
     )
-    return df.loc[:, ["Date", "symbol", col_k_name, col_d_name]]
+    stochastic_rsi_crossover = where(df["stochastic_rsi_K"] >= df["stochastic_rsi_D"], 1, -1)
+    df = df.assign(stochastic_rsi_crossover=stochastic_rsi_crossover)
+
+    return df.loc[:, ["Date", "symbol", "stochastic_rsi_K", "stochastic_rsi_D", "stochastic_rsi_crossover"]]
 
 
 def macd(df: DataFrame, fastperiod: int = 12, slowperiod: int = 26, signalperiod: int = 9) -> DataFrame:
@@ -73,13 +86,15 @@ def macd(df: DataFrame, fastperiod: int = 12, slowperiod: int = 26, signalperiod
     macd, macdsignal, macdhist = talib.MACD(
         df.Close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod
     )
-    # df.loc[:, "macd"] = macd
-    # df.loc[:, "macdsignal"] = macdsignal
-    # df.loc[:, "macdhist"] = macdhist
+
     df = df.assign(macd=macd)
     df = df.assign(macdsignal=macdsignal)
     df = df.assign(macdhist=macdhist)
-    return df.loc[:, ["Date", "symbol", "macd", "macdsignal", "macdhist"]]
+    macdtrend = where(df["macd"] > df["macd"].shift(1), 1, where(df["macd"] < df["macd"].shift(1), -1, 0))
+    df = df.assign(macdtrend=macdtrend)
+    macd_streak = df["macdtrend"].groupby((df["macdtrend"] != df["macdtrend"].shift(1)).cumsum()).cumcount() + 1
+    df = df.assign(macdstreak=macd_streak)
+    return df.loc[:, ["Date", "symbol", "macd", "macdsignal", "macdhist", "macdtrend", "macdstreak"]]
 
 
 def natr(df: DataFrame, timeperiod: int = 14) -> DataFrame:
@@ -87,13 +102,34 @@ def natr(df: DataFrame, timeperiod: int = 14) -> DataFrame:
 
     validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close", "High", "Low"])
 
-    natr = talib.NATR(high=df.High, low=df.Low, close=df.Close, timeperiod=14)
+    natr = talib.NATR(high=df.High, low=df.Low, close=df.Close, timeperiod=timeperiod)
     col_name = f"natr_{timeperiod}"
-
-    # df[col_name] = natr
     df = df.assign(**{col_name: natr})
 
     return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def volume_ema(df: DataFrame, timeperiod: int = 14) -> DataFrame:
+    """Calculate volume ema"""
+
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Volume"])
+
+    vol_ema = talib.EMA(high=df.High, low=df.Low, close=df.Close, timeperiod=timeperiod)
+    col_name = f"vol_ema_{timeperiod}"
+    df = df.assign(**{col_name: vol_ema})
+
+    return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def obv(df: DataFrame) -> DataFrame:
+    """Calculate volume ema"""
+
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Volume"])
+
+    obv = talib.OBV(real=df.Close, volume=df.Volume)
+    df = df.assign(**{"obv": obv})
+
+    return df.loc[:, ["Date", "symbol", "obv"]]
 
 
 def supertrend(df: DataFrame, timeperiod: int = 10, multiplier: float = 2.0) -> DataFrame:
@@ -155,7 +191,7 @@ def supertrend(df: DataFrame, timeperiod: int = 10, multiplier: float = 2.0) -> 
     # df["supertrend_change"] = where(
     #     df["supertrend"] > df["supertrend"].shift(1), 1, where(df["supertrend"] < df["supertrend"].shift(1), -1, 0)
     # )
-    supertrend_streak = df["supertrend"].swifter.groupby((df["supertrend"] != df["supertrend"].shift()).cumsum()).cumcount() + 1
+    supertrend_streak = df["supertrend"].groupby((df["supertrend"] != df["supertrend"].shift()).cumsum()).cumcount() + 1
     df = df.assign(supertrend_streak=supertrend_streak)
 
     # df.loc[:, "lowerband"] = lowerband
@@ -404,17 +440,17 @@ def stages(
     # )
     # df["close_w_ShortMA_"] = df["close_w_ShortMA"].rolling(window=weekly_MA_smoothing, min_periods=1).mean()
     # df["close_w_LongMA_"] = df["close_w_LongMA"].rolling(window=weekly_MA_smoothing, min_periods=1).mean()
-    df["close_ShortMA"] = df["Close"].swifter.rolling(window=short_moving_average, min_periods=1).mean()
+    df["close_ShortMA"] = df["Close"].rolling(window=short_moving_average, min_periods=1).mean()
     df["close_ShortMA_ratio"] = df["Close"] / df["close_ShortMA"]
 
-    df["close_LongMA"] = df["Close"].swifter.rolling(window=long_moving_average, min_periods=1).mean()
+    df["close_LongMA"] = df["Close"].rolling(window=long_moving_average, min_periods=1).mean()
     df["close_LongMA_ratio"] = df["Close"] / df["close_LongMA"]
 
     df["close_ShortMA_trend"] = (
-        (df["close_ShortMA"] / df["close_ShortMA"].shift(1)).swifter.rolling(window=trend_smoothing, min_periods=1).mean()
+        (df["close_ShortMA"] / df["close_ShortMA"].shift(1)).rolling(window=trend_smoothing, min_periods=1).mean()
     )
     df["close_LongMA_trend"] = (
-        (df["close_LongMA"] / df["close_LongMA"].shift(1)).swifter.rolling(window=trend_smoothing, min_periods=1).mean()
+        (df["close_LongMA"] / df["close_LongMA"].shift(1)).rolling(window=trend_smoothing, min_periods=1).mean()
     )
     df["close_ShortMA_trend_val"] = where(
         df["close_ShortMA_trend"] < (1 - trend_null_zone),
