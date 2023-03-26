@@ -1,17 +1,20 @@
 from dash import Dash, dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
-import plotly.express as px
+
+# import plotly.express as px
 import time
 from app_utilities import load_config, get_candle_data, load_screener_data, get_symbol_info
-from app_graphing import create_figure, clear_figure
+from app_graphing import create_figure
 from screener import Screener
-from utilities import back_in_time
+
+# from utilities import back_in_time
 from indicators import make_indicators
 
 # import yaml
-from pandas import read_hdf, DataFrame
-from tqdm import tqdm
-from numpy import concatenate
+from pandas import read_hdf  # , DataFrame
+
+# from tqdm import tqdm
+# from numpy import concatenate
 from pathlib import Path
 from plotly.graph_objects import Figure
 
