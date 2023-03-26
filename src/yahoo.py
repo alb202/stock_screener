@@ -78,18 +78,7 @@ class Yahoo:
     def get_ticker_info(symbol: str) -> dict:
         return yf.Ticker(symbol).fast_info.__dict__
 
-        # tries = 0
-        # while True:
-        #     try:
-        #         data = yf.Ticker(ticker)
-        #         # data = {key: value for key, value in data.__dict__.items() if key in self.SECTIONS}
-        #         # if len(data["_info"]) > 15:
-        #         return data
-        #     except (ConnectionError, HTTPError) as e:
-        #         print(e)
-        #         tries += 1
-        #         sleep(5 + (2 * tries))
-        #         continue
+
 
 
 # a = Yahoo(save_data=False)
@@ -100,65 +89,5 @@ class Yahoo:
 # b = a.get_batch_info(symbols="AAPL MSFT")
 # b = a.get_batch_data(symbols="AAPL MSFT", period="5y", interval="1d")
 # print(b)
-# c = a.get_ticker_info(symbol="aapl")
-# print(concat(c))
-# b = a.make_tickers(["AAPL  msft ntst"])
-# print(b)
-# print(b.info)
-# a = yf.download(tickers=["AAPL"], period="2y", interval="1h")
-# print(a)
-# tickers = yf.Tickers("AAPL")
-# print(tickers.tickers["AAPL"].history(period="1d", interval="1h"))
 
 
-# print(b.get("_quote")())
-# print(b.get("_data")())
-
-
-#                     tmp.info
-#                     print(tmp.__dict__.keys())
-#                     tmp_ = {k:v for k, v in tmp.__dict__.items() if k in sections}
-#                     if len(tmp_['_info'].keys()) > 15:
-#                         if save_data:
-#                             with open(STOCK_TEMP_DIR+company+'_ticker.pkl', 'wb') as handle:
-#                                 pickle.dump(tmp_, handle, protocol=pickle.HIGHEST_PROTOCOL)
-#                             return
-#                         else:
-#                             return tmp_
-#                     else:
-#                         tries += 1
-#                         sleep(5+(2*tries))
-#                         continue
-#                     print('No data found for '+company)
-#                 except (ConnectionError, Exception) as e:
-#                     print(e)
-#                     tries += 1
-#                     sleep(5+(2*tries))
-#                     continue
-
-#     ''' The function to create the pickled finance ticker '''
-# # def pickle_yfinance_ticker(company,  sections: list = ['_info', '_recommendations']):
-#     tries = 0
-#     while tries < 10:
-#         try:
-#             tmp = yf.Ticker(company)
-#             tmp.info
-#             print(tmp.__dict__.keys())
-#             tmp_ = {k:v for k, v in tmp.__dict__.items() if k in sections}
-#             if len(tmp_['_info'].keys()) > 15:
-#                 if save_data:
-#                     with open(STOCK_TEMP_DIR+company+'_ticker.pkl', 'wb') as handle:
-#                         pickle.dump(tmp_, handle, protocol=pickle.HIGHEST_PROTOCOL)
-#                     return
-#                 else:
-#                     return tmp_
-#             else:
-#                 tries += 1
-#                 sleep(5+(2*tries))
-#                 continue
-#             print('No data found for '+company)
-#         except (ConnectionError, Exception) as e:
-#             print(e)
-#             tries += 1
-#             sleep(5+(2*tries))
-#             continue

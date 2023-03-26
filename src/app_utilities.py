@@ -1,10 +1,3 @@
-# import dash_bootstrap_components as dbc
-# import dash_core_components as dcc
-# from dash import dcc
-# from dash.dependencies import Output, Input, State
-# from plotly.subplots import make_subplots
-# import plotly.graph_objects as go
-
 from pandas import HDFStore, DataFrame, read_hdf
 from pathlib import Path
 import yaml
@@ -16,14 +9,13 @@ def load_config(path: Path) -> dict:
 
 
 def open_hdf(path: Path):
-    # data_path = Path("./data/").absolute()
     return HDFStore(path.absolute(), mode="r")
 
 
 def get_candle_data(path: Path, symbol: str, period: str, candle: str) -> DataFrame:
 
     if not path:
-        return None  # DataFrame({"Date": [], "Open": [], "High": [], "Low": [], "Close": [], "Volume": []})
+        return None 
 
     ohlc_key = f"/OHLCV/{period}/"
     print("OHLC_key", ohlc_key)
@@ -57,7 +49,7 @@ def get_candle_data(path: Path, symbol: str, period: str, candle: str) -> DataFr
 def load_screener_data(path: Path, period: str, lookback: int = 5) -> DataFrame:
 
     if not path:
-        return None  # DataFrame({"Date": [], "Open": [], "High": [], "Low": [], "Close": [], "Volume": []})
+        return None 
 
     screener_key = f"Signals/{period}/merged"
 
@@ -75,87 +67,3 @@ def get_symbol_info(path: Path, table_key: str, symbol: str) -> str:
 
     row = read_hdf(path_or_buf=str(path), key=table_key, mode="r").query(f'symbol == "{symbol}"').iloc[0]
     return "\n".join([f"{k}: {v}" for k, v in row.to_dict().items()])
-
-
-# def screen_symbols(path: Path, period: str, screeners: list[str], lookback: int) -> list[str]:
-
-#     if 'ha' in screeners:
-
-
-# USFEDHOLIDAYS = USFederalHolidayCalendar()
-# USFEDHOLIDAYS.merge(GoodFriday, inplace=True)
-# MARKET_HOLIDAYS = [
-#     i.astype(datetime.datetime).strftime("%Y-%m-%d")
-#     for i in list(pd.offsets.CustomBusinessDay(calendar=USFEDHOLIDAYS).holidays)
-# ][200:700]
-
-# FUNCTION_LOOKUP = {
-#     1: "TIME_SERIES_MONTHLY_ADJUSTED",
-#     2: "TIME_SERIES_WEEKLY_ADJUSTED",
-#     3: "TIME_SERIES_DAILY_ADJUSTED",
-#     4: "TIME_SERIES_INTRADAY",
-#     5: "TIME_SERIES_INTRADAY",
-#     6: "TIME_SERIES_INTRADAY",
-#     7: "TIME_SERIES_INTRADAY",
-# }
-
-# INTERVAL_LOOKUP = {4: "60min", 5: "30min", 6: "15min", 7: "5min"}
-
-
-# def make_rangebreaks(function):
-#     """Set the range breaks for x axis"""
-#     if "INTRADAY" in function:
-#         return [
-#             dict(bounds=["sat", "mon"]),  # hide weekends
-#             dict(values=MARKET_HOLIDAYS),
-#             dict(pattern="hour", bounds=[16, 9.5]),  # hide Christmas and New Year's
-#         ]
-
-#     if "DAILY" in function:
-#         return [
-#             dict(bounds=["sat", "mon"]),  # ,  # hide weekends
-#             dict(values=MARKET_HOLIDAYS),
-#         ]
-#     return None
-
-
-# def process_symbol_input(symbols):
-#     symbols = [
-#         i.strip(" ").upper()
-#         for i in symbols.replace("\n", " ")
-#         .replace(",", " ")
-#         .replace(";", " ")
-#         .replace("'", " ")
-#         .replace('"', " ")
-#         .strip(" ")
-#         .split(" ")
-#     ]
-#     symbols = [i for i in symbols if i != ""]
-#     return sorted(list({i for i in symbols if i is not None}))
-
-
-# def get_price_data(n_clicks, symbol, function, interval, no_api=False):
-#     """Get the data from main
-#     """
-#     if (('INTRADAY' in function) & (interval is None)) | \
-#             (n_clicks == 0) | \
-#             (symbol is None) | \
-#             (function is None):
-#         return pd.DataFrame({'datetime': [],
-#                              'open': [],
-#                              'high': [],
-#                              'low': [],
-#                              'close': [],
-#                              'volume': []})
-
-#     return main(
-#         {'function': [function],
-#          'symbol': [symbol.upper()],
-#          'interval': [interval],
-#          'config': None,
-#          'get_all': False,
-#          'no_return': False,
-#          'force_update': False,
-#          'data_status': False,
-#          'get_symbols': False,
-#          'no_api': no_api})['prices']

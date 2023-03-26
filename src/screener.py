@@ -1,87 +1,12 @@
-# from pandas import HDFStore
-# from pathlib import Path
-from pandas import DataFrame  # , read_parquet, read_hdf, HDFStore, to_datetime
-
-# from datetime import datetime
-# from utilities import back_in_time
-# from pathlib import Path
-# from typing import Optional
-
-
-# def make_signal_table(hdf_path: Path, period: str, signals: list[str]) -> DataFrame:
-#     """Merge the signal data for each period"""
-#     # signals = ["heikin_ashi", "bollinger_bands", "rsi", "macd", "natr", "supertrend"]
-
-#     df = read_hdf(path_or_buf=hdf_path, key=f"/OHLCV/{period}/")
-#     for signal in signals:
-#         df = df.merge(
-#             read_hdf(path_or_buf=hdf_path, key=f"/Signals/{period}/{signal}"),
-#             how="left",
-#             on=["Date", "symbol"],
-#         )
-#     return df.loc[:, ["Date", "symbol"] + [col for col in df.columns if col not in ["symbol", "Date", "index"]]]
+from pandas import DataFrame
 
 
 class Screener:
     def __init__(
         self,
-        # path: Optional[Path] = None,
-        #  merge_data: bool = False
     ):
         pass
-        # self.hdf_path = path
-        # self.keys = self.get_hdf_keys()
-        # self.info = self.get_stock_info()
-        # self.symbols = self.info.symbol.drop_duplicates().to_numpy()
-        # if merge_data:
-        #     self.daily = self.merge_signals(period="D")
-        #     self.weekly = self.merge_signals(period="W")
-        #     self.monthly = self.merge_signals(period="M")
-        # else:
-        #     self.daily = None
-        #     self.weekly = None
-        #     self.monthly = None
-
-    # def get_hdf_keys(self) -> list:
-    #     """Get the keys from the HDF file"""
-    #     store = HDFStore(path=self.hdf_path)
-    #     keys = store.keys()
-    #     store.close()
-    #     return keys
-
-    # def get_stock_info(self) -> DataFrame:
-    #     """Get the stock info from the HDF file"""
-    #     return read_hdf(path_or_buf=self.hdf_path, key="Info")
-
-    # def merge_signals(self, period: str) -> DataFrame:
-    #     """Merge the signal data for each period"""
-    #     signals = ["heikin_ashi", "bollinger_bands", "rsi", "macd", "natr", "supertrend"]
-
-    #     df = read_hdf(path_or_buf=self.hdf_path, key=f"/OHLCV/{period}/")
-    #     for signal in signals:
-    #         df = df.merge(
-    #             read_hdf(path_or_buf=self.hdf_path, key=f"/Signals/{period}/{signal}"),
-    #             how="left",
-    #             on=["Date", "symbol"],
-    #         )
-    #     return df.loc[:, ["Date", "symbol"] + [col for col in df.columns if col not in ["symbol", "Date", "index"]]]
-
-    # def get_screener_data(self, period: str, num_periods: int = 20) -> DataFrame:
-    #     """Get the subset of screener data"""
-    #     if period == "D" and self.daily is not None:
-    #         cutoff_date = back_in_time(days=num_periods)
-    #         return self.daily.query(f"Date > '{cutoff_date}'")
-    #     if period == "W" and self.weekly is not None:
-    #         cutoff_date = back_in_time(weeks=num_periods)
-    #         return self.weekly.query(f"Date > '{cutoff_date}'")
-    #     if period == "M" and self.monthly is not None:
-    #         cutoff_date = back_in_time(days=num_periods * 30)
-    #         return self.monthly.query(f"Date > '{cutoff_date}'")
-    #     return None
-    #     # print(type(date))
-    #     # df = df.sort_values("Date").groupby("symbol").tail(30)
-    #     # print(df)
-    #     # return df
+        
 
     def apply_screeners(self, df: DataFrame, screeners: list[str], num_periods: int = 1) -> DataFrame:
         """Apply screeners"""

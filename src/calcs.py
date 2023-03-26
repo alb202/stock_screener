@@ -162,12 +162,4 @@ def calculations(df: DataFrame, n_jobs: int = 8, calc_set: str = "D") -> dict[Da
         )
     )
 
-    # if calc_set = 'D':
-    #     results["close_40_end"] = concat(
-    #         Parallel(n_jobs=n_jobs)(
-    #             delayed(future_end)(df=df.query(f'symbol == "{symbol}"'), value_col="Close", periods=40)
-    #             for symbol in tqdm(symbols, desc="close_40_end")
-    #         )
-    #     )
-
     return results

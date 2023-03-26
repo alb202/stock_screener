@@ -5,21 +5,12 @@ from tqdm.auto import tqdm
 class Sectors:
 
     ETF_TABLE_URLS = [
-        # "https://stockmarketmba.com/listoftop100etfs.php",
         "https://stockmarketmba.com/listofetfsforasponsor.php?s=22",
         "https://stockmarketmba.com/listofetfsforasponsor.php?s=20",
         "https://stockmarketmba.com/listofetfsforasponsor.php?s=14",
         "https://stockmarketmba.com/listofetfsforasponsor.php?s=63",
         "https://stockmarketmba.com/listofetfsforasponsor.php?s=16",
-        # "https://stockmarketmba.com/listofvalueETFs.php",
-        # "https://stockmarketmba.com/listofmomentumETFs.php",
-        # "https://stockmarketmba.com/listofleveragedetfs.php",
-        # "https://stockmarketmba.com/listofcommodityetfs.php",
-        # "https://stockmarketmba.com/listofcurrencyhedgedetfs.php",
-        # "https://stockmarketmba.com/listofactivelymanagedETFs.php",
-        # "https://stockmarketmba.com/listofpreferredstocketfs.php",
-        # "https://stockmarketmba.com/listofmlpetfs.php",
-        # "https://stockmarketmba.com/listofREITetfs.php",
+
     ]
 
     def __init__(self) -> None:
@@ -74,18 +65,16 @@ class Sectors:
 
         all_sectors = []
         for url in tqdm(self.ETF_TABLE_URLS[:], desc="ETF Sectors"):
-            # label = url.replace("https://stockmarketmba.com/listof", "").replace(".php", "")
+
             df = self._get_sector_table(url=url).drop("Actions", axis=1)
-            # df["sponsor"] = df["Description"].apply(lambda s: s.split(" ")[0])
-            # df = df.rename.columns({"Action": "Actions"})
+
+
             all_sectors.append(df)
         df = concat(all_sectors, axis=0)  # .drop("Actions", axis=1).drop("Action", axis=1)
         df.columns = [col.lower().replace(" ", "_").replace(".", "") for col in df.columns]
         df["market_cap"] = df["market_cap"].apply(lambda i: int(i.replace(",", "").replace("$", "")))
         df["average_volume"] = df["average_volume"].apply(lambda i: int(i))
-        # df["sector"] = df["sector"].apply(
-        #     lambda i: i.lower().replace("+", "_").replace("%26", "and").replace("%97", "__")
-        # )
+
         df = df.rename(
             columns={
                 "symbol": "symbol",
@@ -105,7 +94,7 @@ class Sectors:
         return df.sort_values("symbol").drop_duplicates().reset_index(drop=True).fillna("")
 
 
-# Symbol                                        Name                                              Index        Market cap Current yield  Avg Volume   Action
+
 # a = Sectors()
 # # a.all_etfs.to_csv("./data/temp.tsv", sep="\t", header=True)
 # print(a.all_etfs)

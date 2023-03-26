@@ -96,60 +96,6 @@ def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
 
     fig.update_layout(get_layout_params(symbol=symbol, y_axes=i_rows))
 
-    # if len(data['prices']['close'] > 0):
-    #     _macd = MACD(data=data['prices'][['datetime', 'close']], function=function)
-    #     _macd_plot = _macd.plot_macd(trace_only=True)
-    #     fig.add_trace(row=3, col=1, **_macd_plot['histogram'])
-    #     fig.add_trace(row=3, col=1, **_macd_plot['signal'])
-    #     fig.add_trace(row=3, col=1, **_macd_plot['macd'])
-    #     _rsi = RSI(data=data['prices'][['datetime', 'close']], function=function)
-    #     _rsi_plot = _rsi.plot_rsi(trace_only=True)
-    #     fig.add_trace(row=4, col=1, **_rsi_plot['rsi'])
-    #     fig.add_shape(row=4, col=1, **_rsi_plot['top_line'])
-    #     fig.add_shape(row=4, col=1, **_rsi_plot['bottom_line'])
-    #     _ha = HeikinAshi(data=data['prices'][['datetime', 'open', 'high', 'low', 'close']],
-    #                      function=function)
-    #     _ha_plot = _ha.plot_ha(trace_only=True, show_indicators=True)
-    #     _ha_data = _ha.get_values()
-    #     # fig.add_trace(row=5, col=1, **_ha_plot['ha'])
-    #     # fig['layout']['xaxis1'].update(rangeslider={'visible': False})
-    #     fig.add_trace(row=1, col=1, **_ha_plot['indicator'])
-    #     _mac = MovingAverageCrossover(data=pd.DataFrame({'datetime': _ha_data['datetime'],
-    #                                                      'close': _ha_data['close']}),
-    #                                   function=function,
-    #                                   ma1_period=10,
-    #                                   ma2_period=20)
-    #     _mac_plot = _mac.plot_MAC(trace_only=True)
-    #     fig.add_trace(row=1, col=1, **_mac_plot['ma1'])
-    #     fig.add_trace(row=1, col=1, **_mac_plot['ma2'])
-    #     fig.add_trace(row=1, col=1, **_mac_plot['crossover'])
-    #     _maz = MovingAverageZone(
-    #         datetime=_ha_data['datetime'],
-    #         open=_ha_data['open'],
-    #         close=_ha_data['close'],
-    #         function=function,
-    #         ma1_period=5,
-    #         ma2_period=30)
-    #     _maz_plot = _maz.plot_MAZ(trace_only=True)
-    #     fig.add_trace(row=1, col=1, **_maz_plot['indicator'])
-    #     _retrace = Retracements(high=_ha_data['high'],
-    #                             low=_ha_data['low'],
-    #                             close=_ha_data['close'],
-    #                             dates=_ha_data['datetime'],
-    #                             function=function)
-    #     _retrace.get_retracements(low=.38, high=.6)
-    #     _retrace_plots = _retrace.plot_retracements(trace_only=True)
-    #     fig.add_trace(row=1, col=1, **_retrace_plots['retracement_point_trace'])
-    #     for trace in _retrace_plots['retracement_traces']:
-    #         fig.add_trace(row=1, col=1, secondary_y=False, **trace)
-    # else:
-    #     fig.add_trace(row=3, col=1, trace=go.Scatter(name='MACD', x=[], y=[]))
-    #     fig.add_trace(row=4, col=1, trace=go.Scatter(name='RSI', x=[], y=[]))
-    #     # fig.add_trace(row=5, col=1, trace=go.Scatter(name='HA', x=[], y=[]))
-    #     # fig.add_trace(row=6, col=1, trace=go.Scatter(name='MAC', x=[], y=[]))
-    # fig.update_layout(get_layout_params(symbol=symbol))
-    # if 'yes' in params['show_dividends']:
-    #     add_dividends_to_plot(fig=fig, data=data)
     return fig
 
 

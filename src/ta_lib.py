@@ -2,19 +2,9 @@ import talib
 from pandas import DataFrame, concat
 from ta_utils import validate_columns
 
-# from utilities import generate_week_ids
 from numpy import where, array
 
-# from swifter import swifter, set_defaults
-# set_defaults(
-#     npartitions=None,
-#     dask_threshold=1,
-#     scheduler="processes",
-#     progress_bar=False,
-#     progress_bar_desc=None,
-#     allow_dask_on_strings=False,
-#     force_parallel=False,
-# )
+
 
 __all__ = [
     "bollinger_bands",
@@ -39,8 +29,7 @@ def bollinger_bands(df: DataFrame, timeperiod: int = 5) -> DataFrame:
     df = df.assign(upperband_bb=upperband)
     df = df.assign(middleband_bb=middleband)
     df = df.assign(lowerband_bb=lowerband)
-    # df.loc[:, "middleband"] = middleband
-    # df.loc[:, "lowerband"] = lowerband
+
     return df.loc[:, ["Date", "symbol", "upperband_bb", "middleband_bb", "lowerband_bb"]]
 
 
