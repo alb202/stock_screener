@@ -186,6 +186,16 @@ def load_indicators(config: dict) -> list[dict]:
     return [indicators]
 
 
+@app.callback([Output("checklist-indicators", "value")], Input("store-config", "data"))
+def load_default_indicators(config: dict) -> list[dict]:
+    if not config:
+        return [None]
+    indicators = config.get("config").get("indicators")
+    if not indicators:
+        return [None]
+    return [list(indicators.keys())]
+
+
 @app.callback(
     [Output("textarea-info", "value")],
     [Input("dropdown-symbols", "value")],
