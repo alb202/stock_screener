@@ -1,9 +1,9 @@
 import talib
 from pandas import DataFrame, concat
 from ta_utils import validate_columns
-
+import math
 from numpy import where, array
-
+from scipy.stats import linregress
 
 
 __all__ = [
@@ -15,8 +15,12 @@ __all__ = [
     "volume_ema",
     "obv",
     "supertrend",
-    # "stages",
+    "simple_moving_averages",
+    "exponential_moving_averages",
     "pattern_recognition",
+    "periods_since_bottom",
+    "periods_since_top",
+    "find_slope",
 ]
 
 
@@ -54,7 +58,7 @@ def stochastic_rsi(
     fastk, fastd = talib.STOCHRSI(
         df.Close, timeperiod=timeperiod, fastk_period=fastk_period, fastd_period=fastd_period, fastd_matype=fastd_matype
     )
-    
+
     df = df.assign(
         **{
             "stochastic_rsi_K": fastk,
@@ -121,8 +125,37 @@ def obv(df: DataFrame) -> DataFrame:
     return df.loc[:, ["Date", "symbol", "obv"]]
 
 
-def supertrend(df: DataFrame, timeperiod: int = 10, multiplier: float = 2.0) -> DataFrame:
+def simple_moving_averages(df: DataFrame) -> DataFrame:
+    """Calculate SMA"""
 
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close"])
+
+    sma10 = talib.SMA(df.Close, timeperiod=10)
+    sma20 = talib.SMA(df.Close, timeperiod=20)
+    sma50 = talib.SMA(df.Close, timeperiod=50)
+    sma100 = talib.SMA(df.Close, timeperiod=100)
+    sma200 = talib.SMA(df.Close, timeperiod=200)
+    df = df.assign(**{"sma10": sma10, "sma20": sma20, "sma50": sma50, "sma100": sma100, "sma200": sma200})
+
+    return df.loc[:, ["Date", "symbol", "sma10", "sma20", "sma50", "sma100", "sma200"]]
+
+
+def exponential_moving_averages(df: DataFrame) -> DataFrame:
+    """Calculate EMA"""
+
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close"])
+
+    ema10 = talib.EMA(df.Close, timeperiod=10)
+    ema20 = talib.EMA(df.Close, timeperiod=20)
+    ema50 = talib.EMA(df.Close, timeperiod=50)
+    ema100 = talib.EMA(df.Close, timeperiod=100)
+    ema200 = talib.EMA(df.Close, timeperiod=200)
+    df = df.assign(**{"ema10": ema10, "ema20": ema20, "ema50": ema50, "ema100": ema100, "ema200": ema200})
+
+    return df.loc[:, ["Date", "symbol", "ema10", "ema20", "ema50", "ema100", "ema200"]]
+
+
+def supertrend(df: DataFrame, timeperiod: int = 10, multiplier: float = 2.0) -> DataFrame:
     validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close", "High", "Low"])
 
     high = df.High
@@ -191,9 +224,46 @@ def supertrend(df: DataFrame, timeperiod: int = 10, multiplier: float = 2.0) -> 
     return df.loc[:, ["Date", "symbol", "supertrend", "supertrend_streak", "lowerband_st", "upperband_st"]]
 
 
-def pattern_recognition(df: DataFrame) -> DataFrame:
+def periods_since_bottom(df: DataFrame, num_periods: int = 20, low_column: str = "Low") -> DataFrame:
+    """Find the number of periods from the low of the last n periods"""
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", low_column])
 
-    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Open", "High", "Open", "Close"])
+    col_name = f"periods_since_{num_periods}_{low_column}_bottom"
+    df[col_name] = (
+        df[low_column].rolling(window=num_periods, min_periods=num_periods).apply(lambda l: list(l)[::-1].index(min(l)))
+    )
+    return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def periods_since_top(df: DataFrame, num_periods: int = 20, high_column: str = "High") -> DataFrame:
+    """Find the number of periods from the high of the last n periods"""
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", high_column])
+
+    col_name = f"periods_since_{num_periods}_{high_column}_top"
+    df[col_name] = (
+        df[high_column]
+        .rolling(window=num_periods, min_periods=num_periods)
+        .apply(lambda l: list(l)[::-1].index(max(l)))
+    )
+    return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def find_slope(df: DataFrame, num_periods: int = 10, col: str = "Close") -> DataFrame:
+    """Find the slope in degrees of the last n periods"""
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", col])
+
+    col_name = f"slope_{num_periods}_{col}"
+
+    x = range(1, num_periods + 1)
+    df[col_name] = (
+        df[col].rolling(window=num_periods).apply(lambda y: math.degrees(math.atan(linregress(x=x, y=y).slope)) / 90)
+    )
+    return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def pattern_recognition(df: DataFrame) -> DataFrame:
+    """Find all patterns"""
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Open", "High", "Low", "Close"])
 
     df["CDL2CROWS"] = talib.CDL2CROWS(high=df.High, low=df.Low, open=df.Open, close=df.Close)
     df["CDL3BLACKCROWS"] = talib.CDL3BLACKCROWS(high=df.High, low=df.Low, open=df.Open, close=df.Close)
@@ -334,7 +404,6 @@ def stages(
     long_moving_average: int = 200,
     trend_smoothing: int = 5,
 ) -> DataFrame:
-
     validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close"])
 
     # Stage 1 10-Week Line is rising and is just below the 40-Week Line. The 40-Week Line is flattening out.

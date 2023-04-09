@@ -1,4 +1,5 @@
 from pandas import DataFrame
+from numpy import where
 
 
 class Screener:
@@ -12,13 +13,15 @@ class Screener:
         if df is None:
             return None
         if "ha" in screeners and df is not None:
-            df = self.ha_streak_screener(df=df, trend=trend)
+            df = self.ha_streak_screener(df=df, trend=trend, max_streak=1000)
         if "st" in screeners and df is not None:
-            df = self.supertrend_screener(df=df, trend=trend)
+            df = self.supertrend_screener(df=df, trend=trend, max_streak=1000)
         if "macd" in screeners and df is not None:
-            df = self.macd_screener(df=df, trend=trend)
+            df = self.macd_screener(df=df, trend=trend, max_streak=1000)
         if "srsi" in screeners and df is not None:
-            df = self.stoch_rsi_screener(df=df)
+            df = self.stoch_rsi_screener(df=df, trend=trend)
+        if "sma" in screeners and df is not None:
+            df = self.sma_screener(df=df, trend=trend)
         return df
 
     def ha_streak_screener(self, df: DataFrame, min_streak: int = 1, max_streak: int = 2, trend: int = 1) -> DataFrame:
@@ -67,12 +70,27 @@ class Screener:
             .reset_index(drop=True)
         )
 
+    def sma_screener(self, df: DataFrame, trend: int = 1) -> DataFrame:
+        """Run the SMA 20/50 Crossover"""
+        cols = ["sma20", "sma50"]
+        if df is None:
+            return None
+        print(df.columns)
+        if any([col for col in cols if col not in df.columns]):
+            return None
+        df["tmp"] = where(df["sma20"] >= df["sma50"], 1, -1)
+        return (
+            df.query(f"tmp == {trend}")
+            # .loc[df["sma20"] >= df["sma50"], 1, -1) == trend, :]
+            .sort_values("Date", ascending=True).reset_index(drop=True)
+        )
+
     def stoch_rsi_screener(self, df: DataFrame, rsi_k_min: int = 60, trend: int = 1) -> DataFrame:
         """Run the RSI Stochastic screener"""
         cols = ["stochastic_rsi_crossover", "stochastic_rsi_K", "stochastic_rsi_D"]
         if df is None:
             return None
-        print(df.columns)
+        # print(df.columns)
         if any([col for col in cols if col not in df.columns]):
             return None
         if trend == 1:

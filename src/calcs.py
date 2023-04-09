@@ -70,15 +70,99 @@ def calculations(df: DataFrame, n_jobs: int = 8, calc_set: str = "D") -> dict[Da
         )
     )
 
-    results["obv"] = concat(
+    # results["obv"] = concat(
+    #     Parallel(n_jobs=n_jobs)(
+    #         delayed(natr)(df=df.query(f'symbol == "{symbol}"')) for symbol in tqdm(symbols, desc="obv")
+    #     )
+    # )
+
+    results["sma"] = concat(
         Parallel(n_jobs=n_jobs)(
-            delayed(natr)(df=df.query(f'symbol == "{symbol}"')) for symbol in tqdm(symbols, desc="obv")
+            delayed(simple_moving_averages)(df=df.query(f'symbol == "{symbol}"'))
+            for symbol in tqdm(symbols, desc="simple moving averages")
+        )
+    )
+
+    results["ema"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(exponential_moving_averages)(df=df.query(f'symbol == "{symbol}"'))
+            for symbol in tqdm(symbols, desc="exponential moving averages")
         )
     )
 
     results["supertrend"] = concat(
         Parallel(n_jobs=n_jobs)(
             delayed(supertrend)(df.query(f'symbol == "{symbol}"')) for symbol in tqdm(symbols, desc="supertrend")
+        )
+    )
+
+    results["pattern_recognition"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(pattern_recognition)(df=df.query(f'symbol == "{symbol}"'))
+            for symbol in tqdm(symbols, desc="Pattern Recognition")
+        )
+    )
+
+    results["periods_since_bottom_10"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(periods_since_bottom)(df=df.query(f'symbol == "{symbol}"'), num_periods=10, low_column="Low")
+            for symbol in tqdm(symbols, desc="Periods since 10 period bottom")
+        )
+    )
+
+    results["periods_since_bottom_20"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(periods_since_bottom)(df=df.query(f'symbol == "{symbol}"'), num_periods=20, low_column="Low")
+            for symbol in tqdm(symbols, desc="Periods since 20 period bottom")
+        )
+    )
+
+    results["periods_since_bottom_40"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(periods_since_bottom)(df=df.query(f'symbol == "{symbol}"'), num_periods=40, low_column="Low")
+            for symbol in tqdm(symbols, desc="Periods since 40 period bottom")
+        )
+    )
+
+    results["periods_since_top_10"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=10, low_column="High")
+            for symbol in tqdm(symbols, desc="Periods since 10 period top")
+        )
+    )
+
+    results["periods_since_top_20"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=20, low_column="High")
+            for symbol in tqdm(symbols, desc="Periods since 20 period top")
+        )
+    )
+
+    results["periods_since_top_40"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=40, low_column="High")
+            for symbol in tqdm(symbols, desc="Periods since 30 period top")
+        )
+    )
+
+    results["find_slope_10"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(find_slope)(df=df.query(f'symbol == "{symbol}"'), num_periods=10)
+            for symbol in tqdm(symbols, desc="Find the 10 period slope")
+        )
+    )
+
+    results["find_slope_20"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(find_slope)(df=df.query(f'symbol == "{symbol}"'), num_periods=20)
+            for symbol in tqdm(symbols, desc="Find the 20 period slope")
+        )
+    )
+
+    results["find_slope_40"] = concat(
+        Parallel(n_jobs=n_jobs)(
+            delayed(find_slope)(df=df.query(f'symbol == "{symbol}"'), num_periods=40)
+            for symbol in tqdm(symbols, desc="Find the 40 period slope")
         )
     )
 
@@ -100,12 +184,12 @@ def calculations(df: DataFrame, n_jobs: int = 8, calc_set: str = "D") -> dict[Da
             for symbol in tqdm(symbols, desc="close_20_max")
         )
     )
-    results["close_40_max"] = concat(
-        Parallel(n_jobs=n_jobs)(
-            delayed(future_max)(df=df.query(f'symbol == "{symbol}"'), value_col="Close", periods=40)
-            for symbol in tqdm(symbols, desc="close_40_max")
-        )
-    )
+    # results["close_40_max"] = concat(
+    #     Parallel(n_jobs=n_jobs)(
+    #         delayed(future_max)(df=df.query(f'symbol == "{symbol}"'), value_col="Close", periods=40)
+    #         for symbol in tqdm(symbols, desc="close_40_max")
+    #     )
+    # )
     results["high_5_max"] = concat(
         Parallel(n_jobs=n_jobs)(
             delayed(future_max)(df=df.query(f'symbol == "{symbol}"'), value_col="High", periods=5)
@@ -124,12 +208,12 @@ def calculations(df: DataFrame, n_jobs: int = 8, calc_set: str = "D") -> dict[Da
             for symbol in tqdm(symbols, desc="high_20_max")
         )
     )
-    results["high_40_max"] = concat(
-        Parallel(n_jobs=n_jobs)(
-            delayed(future_max)(df=df.query(f'symbol == "{symbol}"'), value_col="High", periods=40)
-            for symbol in tqdm(symbols, desc="high_40_max")
-        )
-    )
+    # results["high_40_max"] = concat(
+    #     Parallel(n_jobs=n_jobs)(
+    #         delayed(future_max)(df=df.query(f'symbol == "{symbol}"'), value_col="High", periods=40)
+    #         for symbol in tqdm(symbols, desc="high_40_max")
+    #     )
+    # )
     results["close_5_end"] = concat(
         Parallel(n_jobs=n_jobs)(
             delayed(future_end)(df=df.query(f'symbol == "{symbol}"'), value_col="Close", periods=5)
@@ -148,18 +232,11 @@ def calculations(df: DataFrame, n_jobs: int = 8, calc_set: str = "D") -> dict[Da
             for symbol in tqdm(symbols, desc="close_20_end")
         )
     )
-    results["close_40_end"] = concat(
-        Parallel(n_jobs=n_jobs)(
-            delayed(future_end)(df=df.query(f'symbol == "{symbol}"'), value_col="Close", periods=40)
-            for symbol in tqdm(symbols, desc="close_40_end")
-        )
-    )
-
-    results["pattern_recognition"] = concat(
-        Parallel(n_jobs=n_jobs)(
-            delayed(pattern_recognition)(df=df.query(f'symbol == "{symbol}"'))
-            for symbol in tqdm(symbols, desc="Pattern Recognition")
-        )
-    )
+    # results["close_40_end"] = concat(
+    #     Parallel(n_jobs=n_jobs)(
+    #         delayed(future_end)(df=df.query(f'symbol == "{symbol}"'), value_col="Close", periods=40)
+    #         for symbol in tqdm(symbols, desc="close_40_end")
+    #     )
+    # )
 
     return results

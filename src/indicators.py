@@ -33,6 +33,12 @@ def make_indicators(path: Path, period: str, symbol: str, indicators: list[str])
             .sort_values("Date", ascending=True)
             .reset_index(drop=True)
         )
+    if "sma" in indicators:
+        indicator_list["SMA"] = (
+            sma_crossover_indicator(path=path, period=period, symbol=symbol)
+            .sort_values("Date", ascending=True)
+            .reset_index(drop=True)
+        )
     return indicator_list
 
 
@@ -81,4 +87,16 @@ def stochastic_rsi_indicator(path: Path, period: str, symbol: str):
         .rename(columns={"stochastic_rsi_crossover": "value"})
     )
     df.name = "Stochastic RSI"
+    return df
+
+
+def sma_crossover_indicator(path: Path, period: str, symbol: str):
+    """SMA Crossover indicator"""
+    df = (
+        read_hdf(path_or_buf=str(path), key=f"/Signals/{period}/sma")
+        .query(f'symbol == "{symbol}"')
+        .loc[:, ["Date", "sma20", "sma50"]]
+    )
+    df["value"] = where(df["sma20"] >= df["sma50"], 1, -1)
+    df.name = "SMA 20/50 Crossover"
     return df
