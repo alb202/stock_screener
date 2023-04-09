@@ -10,7 +10,6 @@ class Sectors:
         "https://stockmarketmba.com/listofetfsforasponsor.php?s=14",
         "https://stockmarketmba.com/listofetfsforasponsor.php?s=63",
         "https://stockmarketmba.com/listofetfsforasponsor.php?s=16",
-
     ]
 
     def __init__(self) -> None:
@@ -20,13 +19,14 @@ class Sectors:
         self.all_etfs = self._get_etfs()
 
     def _get_sector_table(self, url: str) -> DataFrame:
-        df = read_html(url, header=0)[0].iloc[:-1]
+        df = read_html(url, header=0)[1].iloc[:-1]
         return df
 
     def _get_sectors(self) -> DataFrame:
 
-        df = read_html(self.top_stock_url, header=0, extract_links="all")[0].iloc[:-1]
+        df = read_html(self.top_stock_url, header=0, extract_links="all")[1].iloc[:-1]
         df.columns = [col[0].lower().replace(" ", "_").replace(".", "") for col in df.columns]
+        print(df)
         df["industry"] = df["industry"].apply(lambda i: i[0])
         df["market_cap"] = df["market_cap"].apply(lambda i: i[0].replace(",", "").replace("$", ""))
         df["links"] = df["us_stock_count"].apply(lambda i: f"https://stockmarketmba.com/{i[1]}")
@@ -68,7 +68,6 @@ class Sectors:
 
             df = self._get_sector_table(url=url).drop("Actions", axis=1)
 
-
             all_sectors.append(df)
         df = concat(all_sectors, axis=0)  # .drop("Actions", axis=1).drop("Action", axis=1)
         df.columns = [col.lower().replace(" ", "_").replace(".", "") for col in df.columns]
@@ -94,8 +93,9 @@ class Sectors:
         return df.sort_values("symbol").drop_duplicates().reset_index(drop=True).fillna("")
 
 
-
 # a = Sectors()
-# # a.all_etfs.to_csv("./data/temp.tsv", sep="\t", header=True)
-# print(a.all_etfs)
-# # # print(read_html("https://stockmarketmba.com/listofstocksinanindustry.php?i=Advertising+Agencies"))
+# a.all_stocks.to_parquet("./data/all_stocks.parquet")
+# a.all_etfs.to_parquet("./data/all_etfs.parquet")
+# print(a.all_stocks)
+# a.all_stocks.to_csv('')
+# # print(read_html("https://stockmarketmba.com/listofstocksinanindustry.php?i=Advertising+Agencies"))
