@@ -126,21 +126,21 @@ def calculations(df: DataFrame, n_jobs: int = 8, calc_set: str = "D") -> dict[Da
 
     results["periods_since_top_10"] = concat(
         Parallel(n_jobs=n_jobs)(
-            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=10, low_column="High")
+            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=10, high_column="High")
             for symbol in tqdm(symbols, desc="Periods since 10 period top")
         )
     )
 
     results["periods_since_top_20"] = concat(
         Parallel(n_jobs=n_jobs)(
-            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=20, low_column="High")
+            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=20, high_column="High")
             for symbol in tqdm(symbols, desc="Periods since 20 period top")
         )
     )
 
     results["periods_since_top_40"] = concat(
         Parallel(n_jobs=n_jobs)(
-            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=40, low_column="High")
+            delayed(periods_since_top)(df=df.query(f'symbol == "{symbol}"'), num_periods=40, high_column="High")
             for symbol in tqdm(symbols, desc="Periods since 30 period top")
         )
     )

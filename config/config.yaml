@@ -1,9 +1,8 @@
 config:
   paths:
-    hdf_path: /Users/ab/Data/stock_data/store.h5
-  hdf_keys: 
-    screener_symbols: /DataSymbols
-    symbol_info: /Info
+    data_path: /Users/ab/Data/stock_data/
+  data_subfolders: 
+    symbol_info: info
   screeners:
     ha: Heikin Ashi
     st: Supertrend

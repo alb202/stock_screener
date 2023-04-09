@@ -1,12 +1,14 @@
-from pandas import read_hdf
+from pandas import read_hdf, read_parquet
 from pathlib import Path
 
 
 def get_patterns(path: Path, period: str, symbol: str) -> dict:
-
-    key = f"/Signals/{period}/pattern_recognition"
-
-    df = read_hdf(path_or_buf=str(path), key=key).query(f'symbol == "{symbol}"').reset_index(drop=True)
+    """Read the pattern data from disk"""
+    df = (
+        read_parquet(path=path / f"signals/{period}/pattern_recognition.parquet")
+        .query(f'symbol == "{symbol}"')
+        .reset_index(drop=True)
+    )
     value_cols = [col for col in df.columns if col not in ["Date", "symbol"]]
 
     df = (

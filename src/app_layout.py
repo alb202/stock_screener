@@ -11,7 +11,7 @@ def layout() -> dbc.Container:
         # style={"width": 15600},
         children=[
             dcc.Store(id="store-config", data=load_config(path=CONFIG_PATH)),
-            dcc.Store(id="store-hdf-path", data=None),
+            dcc.Store(id="store-data-path", data=None),
             dbc.Row(
                 [
                     dbc.Col(

@@ -9,7 +9,7 @@ from indicators import make_indicators
 from lines import make_lines
 from patterns import get_patterns
 
-from pandas import read_hdf
+from pandas import read_parquet
 from pathlib import Path
 from plotly.graph_objects import Figure
 from app_layout import layout
@@ -22,13 +22,17 @@ app.layout = layout()
 
 
 @app.callback(
-    Output("store-hdf-path", "data"),
+    Output("store-data-path", "data"),
     Input("store-config", "data"),
 )
-def load_hdf_path(config: dict) -> None:
+def load_data_path(config: dict) -> str:
     if not config:
         return ""
-    return str(Path(config.get("config").get("paths").get("hdf_path")).absolute())
+    return config.get("config").get("paths").get("data_path")
+    # print(data_path)
+    # path = str(Path(data_path).absolute())
+    # print("path", path)
+    # return path
 
 
 @app.callback([Output("checklist-screeners", "options")], Input("store-config", "data"))
@@ -65,10 +69,12 @@ def load_default_indicators(config: dict) -> list[dict]:
 def load_lines(config: dict) -> list[dict]:
     if not config:
         return [None]
+
     lines = config.get("config").get("lines")
+
     if not lines:
         return [None]
-    # print("lines", lines, list(lines.keys()))
+
     return [list(lines.keys())]
 
 
@@ -77,21 +83,19 @@ def load_lines(config: dict) -> list[dict]:
     [Input("radio-symbols", "value")],
     [
         State("store-config", "data"),
-        State("store-hdf-path", "data"),
+        State("store-data-path", "data"),
     ],
 )
-def load_info(symbol: str, config: dict, path: Path) -> dict:
+def load_info(symbol: str, config: dict, path: str) -> dict:
     if not symbol or not config or not path:
         return [""]
-    return [
-        get_symbol_info(path=path, symbol=symbol, table_key=config.get("config").get("hdf_keys").get("symbol_info"))
-    ]
+    return [get_symbol_info(path=Path(path), symbol=symbol)]
 
 
 @app.callback(
     [Output("radio-symbols", "options")],
     [
-        Input("store-hdf-path", "data"),
+        Input("store-data-path", "data"),
         State("store-config", "data"),
         Input("radio-period", "value"),
         Input("checklist-screeners", "value"),
@@ -100,20 +104,18 @@ def load_info(symbol: str, config: dict, path: Path) -> dict:
     ],
 )
 def load_symbols(
-    path: Path, config: dict, period: str, screeners: list[str], screener_lookback: list[int], trend: int
+    path: str, config: dict, period: str, screeners: list[str], screener_lookback: list[int], trend: int
 ) -> list[list]:
     """Load the symbols"""
     if path is None or config is None or period is None:
         return [[]]
 
-    df = read_hdf(path, key=config.get("config").get("hdf_keys").get("screener_symbols"), mode="r").sort_values(
-        "symbol", ascending=True
-    )
+    df = read_parquet(path=Path(path) / "symbols" / "data.parquet").sort_values("symbol", ascending=True)
 
     if len(screeners) == 0:
         return [df.symbol.drop_duplicates().sort_values().to_list()]
 
-    df_signals = load_screener_data(path=path, period=period, lookback=screener_lookback)
+    df_signals = load_screener_data(path=Path(path), period=period, lookback=screener_lookback)
     print(df_signals, screener_lookback, "df_signals")
     if df_signals is None:
         return [[]]
@@ -145,7 +147,7 @@ def load_symbols(
         State("checklist-indicators", "value"),
         State("checklist-lines", "value"),
         State("checklist-patterns", "value"),
-        State("store-hdf-path", "data"),
+        State("store-data-path", "data"),
         # State("store-config", "data"),
     ],
 )
@@ -157,17 +159,19 @@ def load_plot(
     indicators: list,
     lines: list,
     show_patterns: bool,
-    path: Path,
+    path: str,
     # config: dict,
 ) -> list[Figure]:
     print("show_patterns", show_patterns)
-    df = get_candle_data(path=path, symbol=symbol, period=period, candle=candle)
-    indicators = make_indicators(path=path, period=period, symbol=symbol, indicators=indicators)
-    lines = make_lines(path=path, period=period, symbol=symbol, lines=lines)
-    patterns = get_patterns(path=path, symbol=symbol, period=period) if len(show_patterns) > 0 else None
-    fig = create_figure(df=df, symbol=symbol, indicators=indicators, lines=lines, patterns=patterns)
 
-    return [fig]
+    if path is None:
+        return [create_figure(df=None, symbol=None, indicators=None, lines=None, patterns=None)]
+
+    df = get_candle_data(path=Path(path), symbol=symbol, period=period, candle=candle)
+    indicators = make_indicators(path=Path(path), period=period, symbol=symbol, indicators=indicators)
+    lines = make_lines(path=Path(path), period=period, symbol=symbol, lines=lines)
+    patterns = get_patterns(path=Path(path), symbol=symbol, period=period) if len(show_patterns) > 0 else None
+    return [create_figure(df=df, symbol=symbol, indicators=indicators, lines=lines, patterns=patterns)]
 
 
 if __name__ == "__main__":

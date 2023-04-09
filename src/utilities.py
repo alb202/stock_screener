@@ -4,6 +4,7 @@ from pandas.tseries.offsets import CustomBusinessDay
 from pandas import to_datetime, DataFrame, date_range
 from numpy import ceil
 from typing import Optional
+from pathlib import Path
 
 USFEDHOLIDAYS = USFederalHolidayCalendar()
 USFEDHOLIDAYS.merge(GoodFriday, inplace=True)
@@ -33,3 +34,8 @@ def generate_week_ids(start_date="2015-01-01"):
     df["week_id"] = [j for k in [[i] * 7 for i in range(0, int(ceil(len(df) / 7)))] for j in k][: len(df)]
     df["Date"] = df["Date"].astype(str)
     return df.loc[:, ["Date", "week_id"]]
+
+
+def make_directories(data_path: Path) -> None:
+    for path in ["", "symbols/", "OHLCV/D/", "OHLCV/W/", "OHLCV/M/", "signals/D/", "signals/W/", "signals/M/"]:
+        (data_path / path).mkdir(parents=True, exist_ok=True)

@@ -1,4 +1,4 @@
-from pandas import DataFrame, read_parquet, read_hdf, HDFStore, to_datetime
+from pandas import DataFrame, read_parquet, read_hdf, HDFStore, to_datetime, read_parquet
 from pathlib import Path
 from numpy import where
 
@@ -45,7 +45,7 @@ def make_indicators(path: Path, period: str, symbol: str, indicators: list[str])
 def ha_indicator(path: Path, period: str, symbol: str):
     """Heikin Ashi indicator"""
     df = (
-        read_hdf(path_or_buf=str(path), key=f"/Signals/{period}/heikin_ashi")
+        read_parquet(path=path / f"signals/{period}/heikin_ashi.parquet")
         .query(f'symbol == "{symbol}"')
         .loc[:, ["Date", "HA_Trend"]]
         .rename(columns={"HA_Trend": "value"})
@@ -57,7 +57,7 @@ def ha_indicator(path: Path, period: str, symbol: str):
 def supertrend_indicator(path: Path, period: str, symbol: str):
     """Supertrend indicator"""
     df = (
-        read_hdf(path_or_buf=str(path), key=f"/Signals/{period}/supertrend")
+        read_parquet(path=path / f"signals/{period}/supertrend.parquet")
         .query(f'symbol == "{symbol}"')
         .loc[:, ["Date", "supertrend"]]
         .rename(columns={"supertrend": "value"})
@@ -69,7 +69,7 @@ def supertrend_indicator(path: Path, period: str, symbol: str):
 def macd_indicator(path: Path, period: str, symbol: str):
     """MACD trend indicator"""
     df = (
-        read_hdf(path_or_buf=str(path), key=f"/Signals/{period}/macd")
+        read_parquet(path=path / f"signals/{period}/macd.parquet")
         .query(f'symbol == "{symbol}"')
         .loc[:, ["Date", "macdtrend"]]
         .rename(columns={"macdtrend": "value"})
@@ -81,7 +81,7 @@ def macd_indicator(path: Path, period: str, symbol: str):
 def stochastic_rsi_indicator(path: Path, period: str, symbol: str):
     """Stochastic RSI trend indicator"""
     df = (
-        read_hdf(path_or_buf=str(path), key=f"/Signals/{period}/stochastic_rsi")
+        read_parquet(path=path / f"signals/{period}/stochastic_rsi.parquet")
         .query(f'symbol == "{symbol}"')
         .loc[:, ["Date", "stochastic_rsi_K", "stochastic_rsi_D", "stochastic_rsi_crossover"]]
         .rename(columns={"stochastic_rsi_crossover": "value"})
@@ -93,7 +93,7 @@ def stochastic_rsi_indicator(path: Path, period: str, symbol: str):
 def sma_crossover_indicator(path: Path, period: str, symbol: str):
     """SMA Crossover indicator"""
     df = (
-        read_hdf(path_or_buf=str(path), key=f"/Signals/{period}/sma")
+        read_parquet(path=path / f"signals/{period}/sma.parquet")
         .query(f'symbol == "{symbol}"')
         .loc[:, ["Date", "sma20", "sma50"]]
     )

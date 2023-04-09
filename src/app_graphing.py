@@ -38,7 +38,7 @@ def create_figure(df: DataFrame, symbol: str, indicators: dict, lines: DataFrame
 
     fig.update_xaxes(rangebreaks=RANGEBREAKS)
 
-    if df is None:
+    if df is None or symbol is None:
         return fig
 
     if df.empty:
