@@ -37,29 +37,23 @@ def main(
 
     if refresh_info:
         nasdaq = Nasdaq()
-        all_nasdaq = nasdaq().loc[:, ["symbol"]]  
-        
+        all_nasdaq = nasdaq().loc[:, ["symbol"]]
 
-        print(all_nasdaq)
         sectors = Sectors()
         stock_info = sectors.all_stocks.merge(all_nasdaq, how="inner", on="symbol")
         etf_info = sectors.all_etfs.merge(all_nasdaq, how="inner", on="symbol")
 
-
         stock_info.to_parquet(data_path / "stock_info.parquet")
         etf_info.to_parquet(data_path / "etf_info.parquet")
 
-
     else:
-        stock_info = read_parquet(data_path / "stock_info.parquet")  
-        etf_info = read_parquet(data_path / "etf_info.parquet")  
-
+        stock_info = read_parquet(data_path / "stock_info.parquet")
+        etf_info = read_parquet(data_path / "etf_info.parquet")
 
     symbol_info = (
         concat([stock_info[:n_test], etf_info[:n_test]], axis=0).sort_values("symbol").reset_index(drop=True)[:n_test]
     )
-    symbol_info.to_hdf(path_or_buf=hdf_store, key="Info/", format="fixed", mode="a")
-
+    symbol_info.to_hdf(path_or_buf=hdf_store, key="Info/", format="table", append=False, mode="a")
 
     data_symbols = symbol_info.loc[
         (
@@ -72,21 +66,17 @@ def main(
             & (symbol_info["equity_type"] != "Units")
         ),
         ["symbol"],
-    ]
-
+    ].reset_index(drop=True)
 
     if refresh_prices:
-
-
-
         prices_d_df = yahoo_stock_prices(symbols=data_symbols.symbol, interval="1d", period="2y")
-        prices_d_df.to_hdf(path_or_buf=hdf_store, key="OHLCV/D/", format="fixed", mode="a")
+        prices_d_df.to_hdf(path_or_buf=hdf_store, key="OHLCV/D/", format="table", append=False, mode="a")
 
         prices_wk_df = yahoo_stock_prices(symbols=data_symbols.symbol, interval="1wk", period="3y")
-        prices_wk_df.to_hdf(path_or_buf=hdf_store, key="OHLCV/W/", format="fixed", mode="a")
+        prices_wk_df.to_hdf(path_or_buf=hdf_store, key="OHLCV/W/", format="table", append=False, mode="a")
 
         prices_mo_df = yahoo_stock_prices(symbols=data_symbols.symbol, interval="1mo", period="5y")
-        prices_mo_df.to_hdf(path_or_buf=hdf_store, key="OHLCV/M/", format="fixed", mode="a")
+        prices_mo_df.to_hdf(path_or_buf=hdf_store, key="OHLCV/M/", format="table", append=False, mode="a")
     else:
         prices_d_df = read_hdf(path_or_buf=hdf_store, key="OHLCV/D/")
         prices_wk_df = read_hdf(path_or_buf=hdf_store, key="OHLCV/W/")
@@ -109,7 +99,7 @@ def main(
     )
 
     screener_symbols = prices_d_df.loc[:, ["symbol"]].sort_values("symbol").drop_duplicates().reset_index(drop=True)
-    screener_symbols.to_hdf(hdf_store, key="/DataSymbols", format="fixed", mode="a")
+    screener_symbols.to_hdf(hdf_store, key="/DataSymbols", format="table", append=False, mode="a")
 
     if refresh_signals:
         daily_calcs = calculations(df=prices_d_df, calc_set="D")
@@ -118,8 +108,8 @@ def main(
             df = df.merge(
                 value.drop(columns=value.columns.intersection(["Volume"]), axis=1), how="left", on=["Date", "symbol"]
             )
-            value.to_hdf(path_or_buf=hdf_store, key=f"/Signals/D/{key}", format="fixed", mode="a")
-        df.to_hdf(path_or_buf=hdf_store, key=f"/Signals/D/merged", format="fixed", mode="a")
+            value.to_hdf(path_or_buf=hdf_store, key=f"/Signals/D/{key}", format="table", append=False, mode="a")
+        df.to_hdf(path_or_buf=hdf_store, key=f"/Signals/D/merged", format="table", append=False, mode="a")
 
         weekly_calcs = calculations(df=prices_wk_df, calc_set="W")
         df = prices_wk_df.copy(deep=True)
@@ -127,8 +117,8 @@ def main(
             df = df.merge(
                 value.drop(columns=value.columns.intersection(["Volume"]), axis=1), how="left", on=["Date", "symbol"]
             )
-            value.to_hdf(path_or_buf=hdf_store, key=f"/Signals/W/{key}", format="fixed", mode="a")
-        df.to_hdf(path_or_buf=hdf_store, key=f"/Signals/W/merged", format="fixed", mode="a")
+            value.to_hdf(path_or_buf=hdf_store, key=f"/Signals/W/{key}", format="table", append=False, mode="a")
+        df.to_hdf(path_or_buf=hdf_store, key=f"/Signals/W/merged", format="table", append=False, mode="a")
 
         monthly_calcs = calculations(df=prices_mo_df, calc_set="M")
         df = prices_mo_df.copy(deep=True)
@@ -136,9 +126,9 @@ def main(
             df = df.merge(
                 value.drop(columns=value.columns.intersection(["Volume"]), axis=1), how="left", on=["Date", "symbol"]
             )
-            value.to_hdf(path_or_buf=hdf_store, key=f"/Signals/M/{key}", format="fixed", mode="a")
-        df.to_hdf(path_or_buf=hdf_store, key=f"/Signals/M/merged", format="fixed", mode="a")
+            value.to_hdf(path_or_buf=hdf_store, key=f"/Signals/M/{key}", format="table", append=False, mode="a")
+        df.to_hdf(path_or_buf=hdf_store, key=f"/Signals/M/merged", format="table", append=False, mode="a")
 
 
 if __name__ == "__main__":
-    main(refresh_info=False, refresh_prices=False, refresh_signals=False, n_test=None)
+    main(refresh_info=False, refresh_prices=True, refresh_signals=True, n_test=None)
