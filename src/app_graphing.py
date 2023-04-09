@@ -7,6 +7,8 @@ from pandas import DataFrame
 from numpy import where
 from plotly.graph_objects import Figure
 
+# from patterns import get_patterns
+from typing import Optional
 
 USFEDHOLIDAYS = USFederalHolidayCalendar()
 # USFEDHOLIDAYS.merge(GoodFriday, inplace=True)
@@ -20,7 +22,7 @@ def clear_figure() -> Figure:
     return []
 
 
-def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
+def create_figure(df: DataFrame, symbol: str, indicators: dict, lines: DataFrame, patterns: Optional[dict]) -> Figure:
     """Plot the data on the main graph"""
     if indicators is not None:
         num_indicators = len(indicators)
@@ -41,7 +43,7 @@ def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
 
     if df.empty:
         return fig
-    
+
     fig.add_trace(
         row=1,
         col=1,
@@ -62,17 +64,29 @@ def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
             volume_color > 0, volume_colors.get(1), where(volume_color < 0, volume_colors.get(-1), volume_colors.get(0))
         )
     )
-    print("indicators", indicators)
-    # y_labels = []
+    if lines is not None:
+        for color, col in zip(
+            ["blue", "red", "orange", "yellow", "green", "pink", "purple", "black"],
+            [col for col in lines.columns if col != "Date"],
+        ):
+            trace = go.Scatter(
+                name=col,
+                y=lines[col],
+                x=lines.Date,
+                fillcolor=color,
+                showlegend=False,
+            )
+            fig.add_trace(
+                trace=trace,
+                row=1,
+                col=1,
+            )
+
     for i, (k, v) in enumerate(indicators.items()):
-        print(i)
-        # print(k)
-        # y_labels.append(k)
-        print(v)
-        colorscale = {-1: "red", 0: "lightgrey", 1: "green"}  # [[-1.0, "red"], [0.0, "lightgrey"], [1.0, "green"]]
+        colorscale = {-1: "red", 0: "lightgrey", 1: "green"}
         trace = go.Bar(
             name=k,
-            y=[1] * len(v),  # [["Hiekin Ashi"]],
+            y=[1] * len(v),
             x=v.Date.tolist(),
             marker={"color": [colorscale[i] for i in v.value.tolist()]},
             showlegend=False,
@@ -82,7 +96,6 @@ def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
             row=[i_rows[i] + 1],
             col=1,
         )
-        # fig.add_annotation(x=0, y=0, text=f"{k}")
 
     fig.add_trace(
         row=i_rows[-1],
@@ -90,8 +103,22 @@ def create_figure(df: DataFrame, symbol: str, indicators: dict) -> Figure:
         trace=go.Bar(name="Volume", showlegend=False, x=df.Date, marker_color=volume_color, y=df.Volume),
     )
 
-    fig.update(layout_xaxis_rangeslider_visible=False)
+    if patterns is not None:
+        for k, v in patterns.items():
+            y_ = df.High * 1.2 if k == "up" else df.Low * 0.8
+            fig.add_trace(
+                go.Scatter(
+                    x=v.get("Date"),
+                    y=y_,
+                    mode="markers",
+                    name=k,
+                    # hoveron={'hoverdata': v.get("indicator")},
+                    textposition="top center",
+                )
+            )
 
+    fig.update(layout_xaxis_rangeslider_visible=False)
+    fig.update_yaxes(fixedrange=False)
     fig.update_layout(get_layout_params(symbol=symbol, y_axes=i_rows))
 
     return fig
@@ -122,7 +149,10 @@ def get_layout_params(symbol: str, y_axes: list[int]):
             "type": "date",
             "rangeslider": {"visible": False},
         },
-        "yaxis1": {"title": {"text": "Price $ - US Dollars"}},
+        "yaxis1": {
+            "title": {"text": "Price $ - US Dollars"},
+            "fixedrange": False,
+        },  #
         f"yaxis{y_axes[-1]}": {"title": {"text": "Volume"}},
     }
 

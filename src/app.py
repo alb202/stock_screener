@@ -6,6 +6,8 @@ from app_graphing import create_figure
 from screener import Screener
 
 from indicators import make_indicators
+from lines import make_lines
+from patterns import get_patterns
 
 from pandas import read_hdf
 from pathlib import Path
@@ -59,6 +61,17 @@ def load_default_indicators(config: dict) -> list[dict]:
     return [list(indicators.keys())]
 
 
+@app.callback([Output("checklist-lines", "options")], Input("store-config", "data"))
+def load_lines(config: dict) -> list[dict]:
+    if not config:
+        return [None]
+    lines = config.get("config").get("lines")
+    if not lines:
+        return [None]
+    # print("lines", lines, list(lines.keys()))
+    return [list(lines.keys())]
+
+
 @app.callback(
     [Output("textarea-info", "value")],
     [Input("radio-symbols", "value")],
@@ -87,55 +100,72 @@ def load_info(symbol: str, config: dict, path: Path) -> dict:
     ],
 )
 def load_symbols(
-    path: Path, config: dict, period: str, screeners: list[str], screener_lookback: int, trend: int
+    path: Path, config: dict, period: str, screeners: list[str], screener_lookback: list[int], trend: int
 ) -> list[list]:
     """Load the symbols"""
-    if path is None or config is None or period is None or screeners is None or screener_lookback is None:
+    if path is None or config is None or period is None:
         return [[]]
-
-    print(path)
-    print(config)
 
     df = read_hdf(path, key=config.get("config").get("hdf_keys").get("screener_symbols"), mode="r").sort_values(
         "symbol", ascending=True
     )
 
-    if len(screeners) == 0 or df.empty:
-        return [df.symbol.drop_duplicates().to_list()]
+    if len(screeners) == 0:
+        return [df.symbol.drop_duplicates().sort_values().to_list()]
 
     df_signals = load_screener_data(path=path, period=period, lookback=screener_lookback)
-
+    print(df_signals, screener_lookback, "df_signals")
     if df_signals is None:
-        return [df.symbol.drop_duplicates().to_list()]
+        return [[]]
+        # return [df.symbol.drop_duplicates().to_list()]
 
     df_screener_symbols = (
-        Screener().apply_screeners(screeners=screeners, df=df_signals, trend=trend).loc[:, ["symbol", "Date"]]
+        Screener().apply_screeners(screeners=screeners, df=df_signals, trend=trend).loc[:, ["symbol"]].drop_duplicates()
     )
 
-    if not df.empty and not df_screener_symbols.empty and df_screener_symbols is not None and df is not None:
-        print(df.columns)
-        print(df_screener_symbols.columns)
-        df = df.merge(df_screener_symbols, how="inner", on=["symbol"])
-    else:
+    if df_screener_symbols.empty or df_screener_symbols is None:
         return [[]]
-    return [df.symbol.sort_values().to_list()]
+        # print(df.columns)
+        # print(df_screener_symbols.columns)
+        # df = df.merge(df_screener_symbols, how="inner", on=["symbol"])
+    return [df_screener_symbols.symbol.drop_duplicates().sort_values().to_list()]
+
+    # return [df.symbol.drop_duplicates().sort_values().to_list()]
 
 
 @app.callback(
     [Output("graph-candlestick", "figure")],
     [
-        Input("radio-symbols", "value"),
-        Input("radio-period", "value"),
-        Input("radio-candle", "value"),
-        Input("checklist-indicators", "value"),
+        Input("button-refresh", "n_clicks"),
     ],
-    [State("store-hdf-path", "data"), State("store-config", "data")],
+    [
+        State("radio-symbols", "value"),
+        State("radio-period", "value"),
+        State("radio-candle", "value"),
+        State("checklist-indicators", "value"),
+        State("checklist-lines", "value"),
+        State("checklist-patterns", "value"),
+        State("store-hdf-path", "data"),
+        # State("store-config", "data"),
+    ],
 )
-def load_plot(symbol: str, period: str, candle: str, indicators: list, path: Path, config: dict) -> list[Figure]:
-
+def load_plot(
+    n_clicks: int,
+    symbol: str,
+    period: str,
+    candle: str,
+    indicators: list,
+    lines: list,
+    show_patterns: bool,
+    path: Path,
+    # config: dict,
+) -> list[Figure]:
+    print("show_patterns", show_patterns)
     df = get_candle_data(path=path, symbol=symbol, period=period, candle=candle)
     indicators = make_indicators(path=path, period=period, symbol=symbol, indicators=indicators)
-    fig = create_figure(df=df, symbol=symbol, indicators=indicators)
+    lines = make_lines(path=path, period=period, symbol=symbol, lines=lines)
+    patterns = get_patterns(path=path, symbol=symbol, period=period) if len(show_patterns) > 0 else None
+    fig = create_figure(df=df, symbol=symbol, indicators=indicators, lines=lines, patterns=patterns)
 
     return [fig]
 

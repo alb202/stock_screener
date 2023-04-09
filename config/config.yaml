@@ -9,8 +9,19 @@ config:
     st: Supertrend
     srsi: Stochastic RSI
     macd: MACD
+    sma: SMA 20/50 Crossover
   indicators:
     ha: Heikin Ash
     st: Suptertrend
     srsi: Stochastic RSI
     macd: MACD
+    sma: SMA 20/50 Crossover
+  lines:
+    sma20: 20 Period SMA
+    sma50: 50 Period SMA
+    sma100: 100 Period SMA
+    sma200: 200 Period SMA
+    ema20: 20 Period EMA
+    ema50: 50 Period EMA
+    ema100: 100 Period EMA
+    ema200: 200 Period EMA

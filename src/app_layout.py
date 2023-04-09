@@ -8,7 +8,8 @@ CONFIG_PATH = Path("./config/config.yaml").absolute()
 
 def layout() -> dbc.Container:
     return dbc.Container(
-        [
+        # style={"width": 15600},
+        children=[
             dcc.Store(id="store-config", data=load_config(path=CONFIG_PATH)),
             dcc.Store(id="store-hdf-path", data=None),
             dbc.Row(
@@ -24,17 +25,17 @@ def layout() -> dbc.Container:
                         ],
                         width={"size": 1, "offset": 0},
                     ),
-                    dbc.Col(
-                        [
-                            dcc.RadioItems(
-                                id="radio-candle",
-                                options={"ha": "Heikin Ashi", "ohlc": "OHLC"},
-                                value="ha",
-                                inline=False,
-                            )
-                        ],
-                        width={"size": 1, "offset": 0},
-                    ),
+                    # dbc.Col(
+                    #     [
+                    #         dcc.RadioItems(
+                    #             id="radio-candle",
+                    #             options={"ha": "Heikin Ashi", "ohlc": "OHLC"},
+                    #             value="ha",
+                    #             inline=False,
+                    #         )
+                    #     ],
+                    #     width={"size": 1, "offset": 0},
+                    # ),
                     dbc.Col(
                         [
                             dcc.Checklist(
@@ -59,24 +60,26 @@ def layout() -> dbc.Container:
                     ),
                     dbc.Col(
                         [
-                            dcc.Slider(
+                            dcc.RangeSlider(
                                 id="slider-periods",
-                                min=0,
-                                max=15,
-                                step=1,
-                                value=1,
+                                # min=0,
+                                # max=15,
+                                step=None,
+                                marks={i: str(i) for i in list(range(0, 16, 1))[::-1]},
+                                value=[0, 1],
+                                vertical=True,
+                                allowCross=False,
+                                pushable=True,
                             )
                         ],
-                        width={"size": 2, "offset": 0},
+                        width={"size": 1, "offset": 0},
                     ),
                     dbc.Col(
                         [
                             dcc.RadioItems(
                                 id="radio-symbols",
                                 options=[],
-                                # searchable=True,
                                 value=None,
-                                # maxHeight=600,
                             )
                         ],
                         width={"size": 1, "offset": 1},
@@ -99,19 +102,45 @@ def layout() -> dbc.Container:
             html.Hr(),
             dbc.Row(
                 [
+                    dbc.Col([html.Button("Refresh Plot", id="button-refresh", n_clicks=0)]),
                     dbc.Col(
                         [
+                            html.H5("Candles"),
+                            dcc.RadioItems(
+                                id="radio-candle",
+                                options={"ha": "Heikin Ashi", "ohlc": "OHLC"},
+                                value="ha",
+                                inline=False,
+                            ),
+                            html.Hr(),
+                            html.H5("Indicators"),
                             dcc.Checklist(
                                 id="checklist-indicators",
                                 options=[],
                                 value=[],
                                 inline=False,
-                            )
+                            ),
+                            html.Hr(),
+                            html.H5("Lines"),
+                            dcc.Checklist(
+                                id="checklist-lines",
+                                options=[],
+                                value=[],
+                                inline=False,
+                            ),
+                            html.Hr(),
+                            html.H5("Patterns"),
+                            dcc.Checklist(
+                                id="checklist-patterns",
+                                options=["Patterns"],
+                                value=[],
+                                inline=False,
+                            ),
                         ],
                         width={"size": 2, "offset": 0},
                     ),
-                    dbc.Col([dcc.Graph(id="graph-candlestick")]),
+                    dbc.Col([dcc.Graph(id="graph-candlestick")], width={"size": 8, "offset": 0}),
                 ]
             ),
-        ]
+        ],
     )

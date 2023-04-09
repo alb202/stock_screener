@@ -15,7 +15,7 @@ def open_hdf(path: Path):
 def get_candle_data(path: Path, symbol: str, period: str, candle: str) -> DataFrame:
 
     if not path:
-        return None 
+        return None
 
     ohlc_key = f"/OHLCV/{period}/"
     print("OHLC_key", ohlc_key)
@@ -46,18 +46,21 @@ def get_candle_data(path: Path, symbol: str, period: str, candle: str) -> DataFr
         )
 
 
-def load_screener_data(path: Path, period: str, lookback: int = 5) -> DataFrame:
+def load_screener_data(path: Path, period: str, lookback: list[int] = [0, 1]) -> DataFrame:
 
     if not path:
-        return None 
+        return None
 
     screener_key = f"Signals/{period}/merged"
-
+    # print("lookback", lookback)
     return (
         read_hdf(path_or_buf=str(path), key=screener_key, mode="r")
         .sort_values("Date", ascending=True)
         .groupby("symbol")
-        .tail(lookback)
+        .tail(lookback[1])
+        .groupby("symbol")
+        .head(lookback[1] - lookback[0])
+        .drop("index", axis=1)
     )
 
 
