@@ -43,17 +43,17 @@ def main(
         stock_info = sectors.all_stocks.merge(all_nasdaq, how="inner", on="symbol")
         etf_info = sectors.all_etfs.merge(all_nasdaq, how="inner", on="symbol")
 
-        stock_info.to_parquet(data_path / "stock_info.parquet")
-        etf_info.to_parquet(data_path / "etf_info.parquet")
+        stock_info.to_parquet(data_path / "info/stock_info.parquet")
+        etf_info.to_parquet(data_path / "info/etf_info.parquet")
 
     else:
-        stock_info = read_parquet(data_path / "stock_info.parquet")
-        etf_info = read_parquet(data_path / "etf_info.parquet")
+        stock_info = read_parquet(data_path / "info/stock_info.parquet")
+        etf_info = read_parquet(data_path / "info/etf_info.parquet")
 
     symbol_info = (
         concat([stock_info[:n_test], etf_info[:n_test]], axis=0).sort_values("symbol").reset_index(drop=True)[:n_test]
     )
-    symbol_info.to_parquet(path=data_path / "merged_info.parquet")
+    symbol_info.to_parquet(path=data_path / "info/merged_info.parquet")
 
     data_symbols = symbol_info.loc[
         (
@@ -131,4 +131,4 @@ def main(
 
 
 if __name__ == "__main__":
-    main(refresh_info=False, refresh_prices=True, refresh_signals=True, n_test=500)
+    main(refresh_info=False, refresh_prices=True, refresh_signals=True, n_test=None)

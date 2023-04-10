@@ -66,5 +66,5 @@ def get_symbol_info(path: Path, symbol: str) -> str:
     if not path or not symbol:
         return ""
 
-    row = read_parquet(path=path / "info.parquet").query(f'symbol == "{symbol}"').iloc[0]
+    row = read_parquet(path=path / "info/merged_info.parquet").query(f'symbol == "{symbol}"').iloc[0]
     return "\n".join([f"{k}: {v}" for k, v in row.to_dict().items()])
