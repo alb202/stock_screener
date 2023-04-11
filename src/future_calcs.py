@@ -12,7 +12,7 @@ def future_max(df: DataFrame, value_col: str = "Close", periods: int = 5) -> Dat
     df = df.sort_values(by="Date", ascending=False)
     df = df.assign(**{new_col: df[value_col].rolling(window=periods).max()})
     df = df.assign(**{new_col_ratio: df[new_col] / df["Close"]})
-    return df.loc[:, ["Date", "symbol", new_col]].sort_values(by="Date", ascending=True)
+    return df.loc[:, ["Date", "symbol", new_col, new_col_ratio]].sort_values(by="Date", ascending=True)
 
 
 def future_end(df: DataFrame, value_col: str = "Close", periods: int = 5) -> DataFrame:
@@ -26,4 +26,4 @@ def future_end(df: DataFrame, value_col: str = "Close", periods: int = 5) -> Dat
     df = df.sort_values(by="Date", ascending=False)
     df = df.assign(**{new_col: df[value_col].shift(periods)})
     df = df.assign(**{new_col_ratio: df[new_col] / df["Close"]})
-    return df.loc[:, ["Date", "symbol", new_col]].sort_values(by="Date", ascending=True)
+    return df.loc[:, ["Date", "symbol", new_col, new_col_ratio]].sort_values(by="Date", ascending=True)

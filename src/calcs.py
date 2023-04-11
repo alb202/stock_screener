@@ -65,7 +65,7 @@ def calculations(df: DataFrame, n_jobs: int = 8, calc_set: str = "D") -> dict[Da
 
     results["volume_ema_14"] = concat(
         Parallel(n_jobs=n_jobs)(
-            delayed(natr)(df=df.query(f'symbol == "{symbol}"'), timeperiod=14)
+            delayed(volume_ema)(df=df.query(f'symbol == "{symbol}"'), timeperiod=14)
             for symbol in tqdm(symbols, desc="volume_ema")
         )
     )
