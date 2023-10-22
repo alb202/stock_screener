@@ -1,4 +1,3 @@
-from pandas import DataFrame
 from requests.sessions import Session
 from requests.adapters import HTTPAdapter
 from requests.models import Response
@@ -10,7 +9,6 @@ disable_warnings(exceptions.InsecureRequestWarning)
 
 
 class YahooInfo:
-
     URL = "https://finance.yahoo.com/quote/"
     HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10)"}
 
