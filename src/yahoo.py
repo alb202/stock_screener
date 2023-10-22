@@ -24,11 +24,9 @@ class PeriodEnum(Enum):
 
 
 class Yahoo:
-
     SECTIONS = ["_info", "_recommendations"]
 
     def __init__(self, save_data: bool = True, n_jobs: int = 1):
-
         self.save_data = save_data
         self.n_jobs = n_jobs
         self.proxy = Proxy()
@@ -58,7 +56,6 @@ class Yahoo:
         return Parallel(n_jobs=self.n_jobs)(delayed(self.get_ticker_info)(symbol) for symbol in symbols)
 
     def get_ticker_data(self, symbol: str, interval: IntervalEnum = "1d", period: PeriodEnum = "2y") -> DataFrame:
-
         tries = 0
         while tries < 5:
             try:
@@ -79,8 +76,6 @@ class Yahoo:
         return yf.Ticker(symbol).fast_info.__dict__
 
 
-
-
 # a = Yahoo(save_data=False)
 # b = a.get_ticker_data(symbol="CETU", interval="1wk", period="5d")
 # print(b)
@@ -89,5 +84,3 @@ class Yahoo:
 # b = a.get_batch_info(symbols="AAPL MSFT")
 # b = a.get_batch_data(symbols="AAPL MSFT", period="5y", interval="1d")
 # print(b)
-
-
