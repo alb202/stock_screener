@@ -39,3 +39,7 @@ def generate_week_ids(start_date="2015-01-01"):
 def make_directories(data_path: Path) -> None:
     for path in ["", "symbols/", "OHLCV/D/", "OHLCV/W/", "OHLCV/M/", "signals/D/", "signals/W/", "signals/M/"]:
         (data_path / path).mkdir(parents=True, exist_ok=True)
+
+
+def camelcase(string: str, delimiter: str = " ") -> str:
+    return delimiter.join([word.capitalize() for word in string.split(delimiter)])
