@@ -1,8 +1,8 @@
 import talib
-from pandas import DataFrame, concat
+from pandas import DataFrame, concat, Series
 from ta_utils import validate_columns
 import math
-from numpy import where, array
+from numpy import where, array, append
 from scipy.stats import linregress
 
 
@@ -12,15 +12,19 @@ __all__ = [
     "stochastic_rsi",
     "macd",
     "natr",
+    "volume_sma",
     "volume_ema",
     "obv",
+    "mansfield_rsi",
+    "sata_moving_averages",
     "supertrend",
     "simple_moving_averages",
     "exponential_moving_averages",
     "pattern_recognition",
     "periods_since_bottom",
     "periods_since_top",
-    "find_slope",
+    "find_slope_",
+    "change_ratio",
 ]
 
 
@@ -37,15 +41,17 @@ def bollinger_bands(df: DataFrame, timeperiod: int = 5) -> DataFrame:
     return df.loc[:, ["Date", "symbol", "upperband_bb", "middleband_bb", "lowerband_bb"]]
 
 
-def rsi(df: DataFrame, timeperiod: int = 14) -> DataFrame:
+def rsi(df: DataFrame, timeperiod: int = 14, ema_length: int = 10) -> DataFrame:
     """Calculate RSI"""
 
     validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close"])
 
     rsi = talib.RSI(df.Close, timeperiod=timeperiod)
-    col_name = f"rsi_{timeperiod}"
-    df = df.assign(**{col_name: rsi})
-    return df.loc[:, ["Date", "symbol", col_name]]
+    rsi_ema = talib.EMA(rsi, timeperiod=ema_length)
+    rsi_col_name = f"rsi_{timeperiod}"
+    rsi_ema_col_name = f"rsi_{timeperiod}_ema_{ema_length}"
+    df = df.assign(**{rsi_col_name: rsi, rsi_ema_col_name: rsi_ema})
+    return df.loc[:, ["Date", "symbol", rsi_col_name, rsi_ema_col_name]]
 
 
 def stochastic_rsi(
@@ -102,14 +108,26 @@ def natr(df: DataFrame, timeperiod: int = 14) -> DataFrame:
     return df.loc[:, ["Date", "symbol", col_name]]
 
 
-def volume_ema(df: DataFrame, timeperiod: int = 14) -> DataFrame:
+def volume_ema(df: DataFrame, timeperiod: int = 10) -> DataFrame:
     """Calculate volume ema"""
 
     validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Volume"])
 
-    vol_ema = talib.EMA(high=df.High, low=df.Low, close=df.Close, timeperiod=timeperiod)
+    vol_ema = talib.EMA(df.Volume, timeperiod=timeperiod)
     col_name = f"vol_ema_{timeperiod}"
     df = df.assign(**{col_name: vol_ema})
+
+    return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def volume_sma(df: DataFrame, timeperiod: int = 10) -> DataFrame:
+    """Calculate volume sma"""
+
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Volume"])
+
+    vol_sma = talib.SMA(df.Volume, timeperiod=timeperiod)
+    col_name = f"vol_sma_{timeperiod}"
+    df = df.assign(**{col_name: vol_sma})
 
     return df.loc[:, ["Date", "symbol", col_name]]
 
@@ -117,7 +135,7 @@ def volume_ema(df: DataFrame, timeperiod: int = 14) -> DataFrame:
 def obv(df: DataFrame) -> DataFrame:
     """Calculate volume ema"""
 
-    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Volume"])
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Volume", "Close"])
 
     obv = talib.OBV(real=df.Close, volume=df.Volume)
     df = df.assign(**{"obv": obv})
@@ -130,14 +148,119 @@ def simple_moving_averages(df: DataFrame) -> DataFrame:
 
     validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close"])
 
+    sma5 = talib.SMA(df.Close, timeperiod=5)
     sma10 = talib.SMA(df.Close, timeperiod=10)
+    sma15 = talib.SMA(df.Close, timeperiod=15)
     sma20 = talib.SMA(df.Close, timeperiod=20)
+    sma30 = talib.SMA(df.Close, timeperiod=30)
+    sma45 = talib.SMA(df.Close, timeperiod=45)
     sma50 = talib.SMA(df.Close, timeperiod=50)
     sma100 = talib.SMA(df.Close, timeperiod=100)
     sma200 = talib.SMA(df.Close, timeperiod=200)
-    df = df.assign(**{"sma10": sma10, "sma20": sma20, "sma50": sma50, "sma100": sma100, "sma200": sma200})
 
-    return df.loc[:, ["Date", "symbol", "sma10", "sma20", "sma50", "sma100", "sma200"]]
+    df = df.assign(
+        **{
+            "sma5": sma5,
+            "sma10": sma10,
+            "sma15": sma15,
+            "sma20": sma20,
+            "sma30": sma30,
+            "sma45": sma45,
+            "sma50": sma50,
+            "sma100": sma100,
+            "sma200": sma200,
+        }
+    )
+    df = df.assign(
+        **{
+            "sma5_sma20_ratio": sma5 / sma20,
+            "sma5_sma50_ratio": sma5 / sma50,
+            "sma10_sma15_ratio": sma10 / sma15,
+            "sma10_sma20_ratio": sma10 / sma20,
+            "sma10_sma50_ratio": sma10 / sma50,
+            "sma10_sma100_ratio": sma10 / sma100,
+            "sma10_sma200_ratio": sma10 / sma200,
+            "sma15_sma45_ratio": sma15 / sma45,
+            "sma20_sma50_ratio": sma20 / sma50,
+            "sma20_sma100_ratio": sma20 / sma100,
+            "sma20_sma200_ratio": sma20 / sma200,
+            "sma30_sma50_ratio": sma30 / sma50,
+            "sma30_sma100_ratio": sma30 / sma100,
+            "sma30_sma200_ratio": sma30 / sma200,
+            "sma50_sma100_ratio": sma50 / sma100,
+            "sma50_sma200_ratio": sma50 / sma200,
+            "sma100_sma200_ratio": sma100 / sma200,
+        }
+    )
+
+    df = df.assign(
+        **{
+            "sma5_sma20_ratio_streak": identify_streaks(s=df["sma5_sma20_ratio"], streak_value=1.0),
+            "sma5_sma50_ratio_streak": identify_streaks(s=df["sma5_sma50_ratio"], streak_value=1.0),
+            "sma10_sma20_ratio_streak": identify_streaks(s=df["sma10_sma20_ratio"], streak_value=1.0),
+            "sma10_sma50_ratio_streak": identify_streaks(s=df["sma10_sma50_ratio"], streak_value=1.0),
+            "sma10_sma100_ratio_streak": identify_streaks(s=df["sma10_sma100_ratio"], streak_value=1.0),
+            "sma10_sma200_ratio_streak": identify_streaks(s=df["sma10_sma200_ratio"], streak_value=1.0),
+            "sma20_sma50_ratio_streak": identify_streaks(s=df["sma20_sma50_ratio"], streak_value=1.0),
+            "sma20_sma100_ratio_streak": identify_streaks(s=df["sma20_sma100_ratio"], streak_value=1.0),
+            "sma20_sma200_ratio_streak": identify_streaks(s=df["sma20_sma200_ratio"], streak_value=1.0),
+            "sma30_sma50_ratio_streak": identify_streaks(s=df["sma30_sma50_ratio"], streak_value=1.0),
+            "sma30_sma100_ratio_streak": identify_streaks(s=df["sma30_sma100_ratio"], streak_value=1.0),
+            "sma30_sma200_ratio_streak": identify_streaks(s=df["sma30_sma200_ratio"], streak_value=1.0),
+            "sma50_sma100_ratio_streak": identify_streaks(s=df["sma50_sma100_ratio"], streak_value=1.0),
+            "sma50_sma200_ratio_streak": identify_streaks(s=df["sma50_sma200_ratio"], streak_value=1.0),
+            "sma100_sma200_ratio_streak": identify_streaks(s=df["sma100_sma200_ratio"], streak_value=1.0),
+        }
+    )
+
+    return df.loc[
+        :,
+        [
+            "Date",
+            "symbol",
+            "sma5",
+            "sma10",
+            "sma15",
+            "sma20",
+            "sma30",
+            "sma45",
+            "sma50",
+            "sma100",
+            "sma200",
+            "sma5_sma20_ratio",
+            "sma5_sma50_ratio",
+            "sma10_sma15_ratio",
+            "sma10_sma20_ratio",
+            "sma10_sma50_ratio",
+            "sma10_sma100_ratio",
+            "sma10_sma200_ratio",
+            "sma15_sma45_ratio",
+            "sma20_sma50_ratio",
+            "sma20_sma100_ratio",
+            "sma20_sma200_ratio",
+            "sma30_sma50_ratio",
+            "sma30_sma100_ratio",
+            "sma30_sma200_ratio",
+            "sma50_sma100_ratio",
+            "sma50_sma200_ratio",
+            "sma100_sma200_ratio",
+            "sma5_sma20_ratio_streak",
+            "sma5_sma50_ratio_streak",
+            "sma10_sma20_ratio_streak",
+            "sma10_sma50_ratio_streak",
+            "sma10_sma100_ratio_streak",
+            "sma10_sma200_ratio_streak",
+            "sma20_sma50_ratio_streak",
+            "sma20_sma100_ratio_streak",
+            "sma20_sma200_ratio_streak",
+            "sma30_sma50_ratio_streak",
+            "sma30_sma100_ratio_streak",
+            "sma30_sma200_ratio_streak",
+            "sma50_sma100_ratio_streak",
+            "sma50_sma200_ratio_streak",
+            "sma100_sma200_ratio_streak",
+        ],
+    ]
 
 
 def exponential_moving_averages(df: DataFrame) -> DataFrame:
@@ -145,14 +268,108 @@ def exponential_moving_averages(df: DataFrame) -> DataFrame:
 
     validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close"])
 
+    ema5 = talib.EMA(df.Close, timeperiod=10)
     ema10 = talib.EMA(df.Close, timeperiod=10)
     ema20 = talib.EMA(df.Close, timeperiod=20)
+    ema30 = talib.EMA(df.Close, timeperiod=30)
     ema50 = talib.EMA(df.Close, timeperiod=50)
     ema100 = talib.EMA(df.Close, timeperiod=100)
     ema200 = talib.EMA(df.Close, timeperiod=200)
-    df = df.assign(**{"ema10": ema10, "ema20": ema20, "ema50": ema50, "ema100": ema100, "ema200": ema200})
+    df = df.assign(
+        **{
+            "ema5": ema5,
+            "ema10": ema10,
+            "ema20": ema20,
+            "ema30": ema30,
+            "ema50": ema50,
+            "ema100": ema100,
+            "ema200": ema200,
+        }
+    )
+    df = df.assign(
+        **{
+            "ema5_ema20_ratio": ema5 / ema20,
+            "ema5_ema50_ratio": ema5 / ema50,
+            "ema10_ema20_ratio": ema10 / ema20,
+            "ema10_ema50_ratio": ema10 / ema50,
+            "ema10_ema100_ratio": ema10 / ema100,
+            "ema10_ema200_ratio": ema10 / ema200,
+            "ema20_ema50_ratio": ema20 / ema50,
+            "ema20_ema100_ratio": ema20 / ema100,
+            "ema20_ema200_ratio": ema20 / ema200,
+            "ema30_ema50_ratio": ema30 / ema50,
+            "ema30_ema100_ratio": ema30 / ema100,
+            "ema30_ema200_ratio": ema30 / ema200,
+            "ema50_ema100_ratio": ema50 / ema100,
+            "ema50_ema200_ratio": ema50 / ema200,
+            "ema100_ema200_ratio": ema100 / ema200,
+        }
+    )
 
-    return df.loc[:, ["Date", "symbol", "ema10", "ema20", "ema50", "ema100", "ema200"]]
+    df = df.assign(
+        **{
+            "ema5_ema20_ratio_streak": identify_streaks(s=df["ema5_ema20_ratio"], streak_value=1.0),
+            "ema5_ema50_ratio_streak": identify_streaks(s=df["ema5_ema50_ratio"], streak_value=1.0),
+            "ema10_ema20_ratio_streak": identify_streaks(s=df["ema10_ema20_ratio"], streak_value=1.0),
+            "ema10_ema50_ratio_streak": identify_streaks(s=df["ema10_ema50_ratio"], streak_value=1.0),
+            "ema10_ema100_ratio_streak": identify_streaks(s=df["ema10_ema100_ratio"], streak_value=1.0),
+            "ema10_ema200_ratio_streak": identify_streaks(s=df["ema10_ema200_ratio"], streak_value=1.0),
+            "ema20_ema50_ratio_streak": identify_streaks(s=df["ema20_ema50_ratio"], streak_value=1.0),
+            "ema20_ema100_ratio_streak": identify_streaks(s=df["ema20_ema100_ratio"], streak_value=1.0),
+            "ema20_ema200_ratio_streak": identify_streaks(s=df["ema20_ema200_ratio"], streak_value=1.0),
+            "ema30_ema50_ratio_streak": identify_streaks(s=df["ema30_ema50_ratio"], streak_value=1.0),
+            "ema30_ema100_ratio_streak": identify_streaks(s=df["ema30_ema100_ratio"], streak_value=1.0),
+            "ema30_ema200_ratio_streak": identify_streaks(s=df["ema30_ema200_ratio"], streak_value=1.0),
+            "ema50_ema100_ratio_streak": identify_streaks(s=df["ema50_ema100_ratio"], streak_value=1.0),
+            "ema50_ema200_ratio_streak": identify_streaks(s=df["ema50_ema200_ratio"], streak_value=1.0),
+            "ema100_ema200_ratio_streak": identify_streaks(s=df["ema100_ema200_ratio"], streak_value=1.0),
+        }
+    )
+
+    return df.loc[
+        :,
+        [
+            "Date",
+            "symbol",
+            "ema5",
+            "ema10",
+            "ema20",
+            "ema30",
+            "ema50",
+            "ema100",
+            "ema200",
+            "ema5_ema20_ratio",
+            "ema5_ema50_ratio",
+            "ema10_ema20_ratio",
+            "ema10_ema50_ratio",
+            "ema10_ema100_ratio",
+            "ema10_ema200_ratio",
+            "ema20_ema50_ratio",
+            "ema20_ema100_ratio",
+            "ema20_ema200_ratio",
+            "ema30_ema50_ratio",
+            "ema30_ema100_ratio",
+            "ema30_ema200_ratio",
+            "ema50_ema100_ratio",
+            "ema50_ema200_ratio",
+            "ema100_ema200_ratio",
+            "ema5_ema20_ratio_streak",
+            "ema5_ema50_ratio_streak",
+            "ema10_ema20_ratio_streak",
+            "ema10_ema50_ratio_streak",
+            "ema10_ema100_ratio_streak",
+            "ema10_ema200_ratio_streak",
+            "ema20_ema50_ratio_streak",
+            "ema20_ema100_ratio_streak",
+            "ema20_ema200_ratio_streak",
+            "ema30_ema50_ratio_streak",
+            "ema30_ema100_ratio_streak",
+            "ema30_ema200_ratio_streak",
+            "ema50_ema100_ratio_streak",
+            "ema50_ema200_ratio_streak",
+            "ema100_ema200_ratio_streak",
+        ],
+    ]
 
 
 def supertrend(df: DataFrame, timeperiod: int = 10, multiplier: float = 2.0) -> DataFrame:
@@ -248,17 +465,79 @@ def periods_since_top(df: DataFrame, num_periods: int = 20, high_column: str = "
     return df.loc[:, ["Date", "symbol", col_name]]
 
 
-def find_slope(df: DataFrame, num_periods: int = 10, col: str = "Close") -> DataFrame:
+def find_slope_(df: DataFrame, num_periods: int = 10, col: str = "Close") -> DataFrame:
     """Find the slope in degrees of the last n periods"""
     validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", col])
 
     col_name = f"slope_{num_periods}_{col}"
-
-    x = range(1, num_periods + 1)
-    df[col_name] = (
-        df[col].rolling(window=num_periods).apply(lambda y: math.degrees(math.atan(linregress(x=x, y=y).slope)) / 90)
+    df[col_name] = talib.LINEARREG_SLOPE(df[col], timeperiod=num_periods).apply(
+        lambda slope: math.degrees(math.atan(slope)) / 90
     )
     return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def linear_regression_channels(
+    df: DataFrame, timeperiod: int = 10, deviations: int = 2, col: str = "Close"
+) -> DataFrame:
+    """Find the slope in degrees of the last n periods"""
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", col])
+
+    col_names = [
+        f"lin_reg_{timeperiod}_{deviations}_{col}",
+        f"stddev_{timeperiod}_{deviations}_{col}",
+        f"lin_reg_upper_channel_{timeperiod}_{deviations}_{col}",
+        f"lin_reg_lower_channel_{timeperiod}_{deviations}_{col}",
+    ]
+    df[col_names[0]] = talib.LINEARREG(df[col], timeperiod=timeperiod)
+    df[col_names[1]] = talib.STDDEV(df[col], timeperiod=timeperiod, nbdev=deviations)
+    df[col_names[2]] = df[col_names[0]] + df[col_names[1]]
+    df[col_names[3]] = df[col_names[0]] - df[col_names[1]]
+    return df.loc[:, ["Date", "symbol"] + col_names]
+
+
+def change_ratio(df: DataFrame, num_periods: int = 1, col: str = "Close") -> DataFrame:
+    """Find the ratio of a column compared to the value n periods ago"""
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", col])
+
+    col_name = f"change_{num_periods}_{col}"
+    df[col_name] = df[col] / df[col].shift(num_periods)
+    return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def mansfield_rsi(df: DataFrame, num_periods: int = 40) -> DataFrame:  ###Finish this first 10/21/2023
+    """Find the ratio of a column compared to the value n periods ago"""
+    validate_columns(df_columns=df.columns, required_columns=["Date", "symbol", "Close", "index_close"])
+    # print(df)
+    col_name = f"mansfield_rsi_{num_periods}"
+    mrsi_relative_performance = (df.Close / df.index_close) * 100
+    # print(mrsi_relative_performance)
+    if mrsi_relative_performance.isna().all():
+        df[col_name] = 50
+        return df.loc[:, ["Date", "symbol", col_name]]
+    df[col_name] = (
+        (mrsi_relative_performance / talib.SMA(mrsi_relative_performance, timeperiod=num_periods)) - 1
+    ) * 100
+    return df.loc[:, ["Date", "symbol", col_name]]
+
+
+def sata_moving_averages(df: DataFrame) -> DataFrame:
+    """Calculate SATA Moving Averages"""
+
+    validate_columns(
+        df_columns=df.columns, required_columns=["Date", "symbol", "Open", "High", "Low", "Close", "Volume"]
+    )
+
+    sata_ma9 = talib.EMA((df.Open + df.High + df.Low + df.Close) / 4, timeperiod=10)
+    sata_ma8 = talib.SMA(df.Close, timeperiod=30)
+    sata_ma7 = talib.SMA(df.Close, timeperiod=7)
+    sata_ma6 = talib.SMA(df.Close, timeperiod=40)
+
+    df["sata_ma6"] = round(df.Close / sata_ma6, ndigits=3)
+    df["sata_ma7"] = round(sata_ma7 / sata_ma7.shift(1), ndigits=3)
+    df["sata_ma8"] = round(sata_ma8 / sata_ma8.shift(1), ndigits=3)
+    df["sata_ma9"] = round(sata_ma9 / sata_ma9.shift(1), ndigits=3)
+
+    return df.loc[:, ["Date", "symbol", "sata_ma6", "sata_ma7", "sata_ma8", "sata_ma9"]]
 
 
 def pattern_recognition(df: DataFrame) -> DataFrame:
@@ -395,6 +674,21 @@ def pattern_recognition(df: DataFrame) -> DataFrame:
             "CDLXSIDEGAP3METHODS",
         ],
     ]
+
+
+def identify_streaks(s: Series, streak_value: int = 1) -> array:
+    r = array([0])
+    arr = where(
+        ((s >= streak_value) & (s.shift(1) < streak_value))
+        | ((s < streak_value) & (s.shift(1) >= streak_value))
+        | s.isnull(),
+        0,
+        1,
+    )
+    for i in range(1, len(arr)):
+        q = r[-1] + 1 if arr[i] != 0 else 0
+        r = append(r, q)
+    return r
 
 
 def stages(
@@ -627,5 +921,43 @@ def stages(
     ]
 
 
-# # a = talib.get_function_groups()
-# # print(a)
+# # # a = talib.get_function_groups()
+# # # print(a)
+
+# from pandas import read_parquet
+# from pathlib import Path
+
+# data_path = Path("/Users/ab/Data/stock_data/")
+# df_ = read_parquet(data_path / "OHLCV/D/data.parquet").query('symbol == "MRNA"')
+# print(df_)
+# df__ = df_.loc[:, ["symbol", "Date", "Close"]].merge(
+#     linear_regression_channels(df=df_, timeperiod=100, deviations=2, col="Close").dropna(how="any", axis=0),
+#     how="inner",
+#     on=["symbol", "Date"],
+# )
+# # df__ = linear_regression_channels(df=df_, timeperiod=50, deviations=2, col="Close").dropna(how="any", axis=0)
+# print(
+#     # linear_regression_channels(
+#     #     df=df,
+#     # )
+#     # help(talib.LINEARREG),
+#     # help(talib.STDDEV),
+#     # linear_regression_channels(df=df, timeperiod=50, deviations=2, col="Close"),
+#     df__,
+#     # df_,
+# )
+# df__.to_parquet(path=data_path / "linreg_test.parquet")
+
+# from pathlib import Path
+# import seaborn as sns
+# import matplotlib.pyplot as plt
+# from pandas import read_parquet
+
+# data_path = Path("/Users/ab/Data/stock_data/")
+# df = read_parquet(path=data_path / "linreg_test.parquet").tail(300)
+# fig, ax = plt.subplots(nrows=1, ncols=1)
+# sns.lineplot(data=df, x="Date", y="Close", ax=ax)
+# sns.lineplot(data=df, x="Date", y="lin_reg_100_2_Close", ax=ax)
+# sns.lineplot(data=df, x="Date", y="lin_reg_upper_channel_100_2_Close", ax=ax)
+# sns.lineplot(data=df, x="Date", y="lin_reg_lower_channel_100_2_Close", ax=ax)
+# plt.show()
