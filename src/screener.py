@@ -1,4 +1,4 @@
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from numpy import where
 
 
@@ -20,8 +20,22 @@ class Screener:
             df = self.macd_screener(df=df, trend=trend, max_streak=1000)
         if "srsi" in screeners and df is not None:
             df = self.stoch_rsi_screener(df=df, trend=trend)
-        if "sma" in screeners and df is not None:
-            df = self.sma_screener(df=df, trend=trend)
+        if "sma1" in screeners and df is not None:
+            df = self.ma_screener(df=df, trend=trend, min_streak=1, max_streak=2, ma1="sma5", ma2="sma10")
+        if "sma2" in screeners and df is not None:
+            df = self.ma_screener(df=df, trend=trend, min_streak=1, max_streak=2, ma1="sma10", ma2="sma20")
+        if "sma3" in screeners and df is not None:
+            df = self.ma_screener(df=df, trend=trend, min_streak=1, max_streak=2, ma1="sma20", ma2="sma50")
+        if "sma4" in screeners and df is not None:
+            df = self.ma_screener(df=df, trend=trend, min_streak=1, max_streak=2, ma1="sma20", ma2="sma100")
+        if "sma5" in screeners and df is not None:
+            df = self.ma_screener(df=df, trend=trend, min_streak=1, max_streak=2, ma1="sma30", ma2="sma100")
+        if "sma6" in screeners and df is not None:
+            df = self.ma_screener(df=df, trend=trend, min_streak=1, max_streak=2, ma1="sma50", ma2="sma100")
+        if "sma7" in screeners and df is not None:
+            df = self.ma_screener(df=df, trend=trend, min_streak=1, max_streak=2, ma1="sma50", ma2="sma200")
+        if "sma8" in screeners and df is not None:
+            df = self.ma_screener(df=df, trend=trend, min_streak=1, max_streak=2, ma1="sma100", ma2="sma200")
         return df
 
     def ha_streak_screener(self, df: DataFrame, min_streak: int = 1, max_streak: int = 2, trend: int = 1) -> DataFrame:
@@ -30,6 +44,7 @@ class Screener:
         if df is None:
             print(1)
             return None
+
         if any([col for col in cols if col not in df.columns]):
             print(2)
             return None
@@ -45,7 +60,7 @@ class Screener:
         cols = ["supertrend", "supertrend_streak"]
         if df is None:
             return None
-        print(df.columns)
+
         if any([col for col in cols if col not in df.columns]):
             return None
         return (
@@ -60,7 +75,7 @@ class Screener:
         cols = ["macdtrend", "macdstreak"]
         if df is None:
             return None
-        print(df.columns)
+
         if any([col for col in cols if col not in df.columns]):
             return None
         return (
@@ -70,19 +85,29 @@ class Screener:
             .reset_index(drop=True)
         )
 
-    def sma_screener(self, df: DataFrame, trend: int = 1) -> DataFrame:
-        """Run the SMA 20/50 Crossover"""
-        cols = ["sma20", "sma50"]
+    def ma_screener(
+        self,
+        df: DataFrame,
+        min_streak: int = 1,
+        max_streak: int = 2,
+        trend: int = 1,
+        ma1: str = "sma20",
+        ma2: str = "sma50",
+    ) -> DataFrame:
+        """Run the SMA Crossover"""
+        cols = [ma1, ma2]
         if df is None:
             return None
-        print(df.columns)
+
         if any([col for col in cols if col not in df.columns]):
             return None
-        df["tmp"] = where(df["sma20"] >= df["sma50"], 1, -1)
+        df["tmp"] = where(df[f"{ma1}_{ma2}_ratio"] >= 1, 1, -1)
         return (
             df.query(f"tmp == {trend}")
-            # .loc[df["sma20"] >= df["sma50"], 1, -1) == trend, :]
-            .sort_values("Date", ascending=True).reset_index(drop=True)
+            .query(f"{ma1}_{ma2}_ratio_streak >= {min_streak}")
+            .query(f"{ma1}_{ma2}_ratio_streak <= {max_streak}")
+            .sort_values("Date", ascending=True)
+            .reset_index(drop=True)
         )
 
     def stoch_rsi_screener(self, df: DataFrame, rsi_k_min: int = 60, trend: int = 1) -> DataFrame:
@@ -90,7 +115,7 @@ class Screener:
         cols = ["stochastic_rsi_crossover", "stochastic_rsi_K", "stochastic_rsi_D"]
         if df is None:
             return None
-        # print(df.columns)
+
         if any([col for col in cols if col not in df.columns]):
             return None
         if trend == 1:
@@ -105,6 +130,9 @@ class Screener:
                 .query(f"stochastic_rsi_K <= {100-rsi_k_min}")
                 .reset_index(drop=True)
             )
+
+
+
 
 
 # data_path = Path("/Users/ab/Data/stock_data/").absolute()
