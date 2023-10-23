@@ -35,11 +35,11 @@ from ta_utils import validate_columns
 def heikin_ashi(df: DataFrame) -> DataFrame:
     """Heikin Ashi Algorithm"""
 
-    cols = ["symbol", "Date", "Open", "High", "Low", "Close", "Volume"]
+    cols = ["Date", "symbol", "Open", "High", "Low", "Close", "Volume"]
 
     validate_columns(df_columns=df.columns, required_columns=cols)
 
-    df = df.sort_values("Date", ascending=True).loc[:, ["Date"] + cols].reset_index(drop=True)
+    df = df.sort_values("Date", ascending=True).loc[:, cols].reset_index(drop=True)
 
     df["HA_Close"] = df.loc[:, ["Open", "High", "Low", "Close"]].apply(sum, axis=1).divide(4)
 
