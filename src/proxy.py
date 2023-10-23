@@ -1,11 +1,21 @@
-from pandas import DataFrame
 from requests.sessions import Session
 
 
 class Proxy:
-    URL = "https://proxylist.geonode.com/api/proxy-list?"
-    HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10)"}
-    PARAMETERS = {"limit": 500, "sort_by": "lastChecked", "sort_type": "desc", "speed": "medium", "protocols": "http"}
+    URL = "https://api.proxyscrape.com/v2/?"
+    HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+    }
+    PARAMETERS = {
+        "request": "displayproxies",
+        "protocol": "http",
+        "timeout": 1000,
+        "country": "us",
+        "ssl": "all",
+        "anonymity": "all",
+    }
 
     def __init__(self) -> None:
         self.session = Session()
@@ -14,7 +24,12 @@ class Proxy:
 
     def refresh_proxy_list(self) -> list:
         """Refresh the proxy list"""
-        return DataFrame(self.get_proxy_table().json().get("data")).ip.to_list()
+        # return DataFrame(self.get_proxy_table().json().get("data")).ip.to_list()
+        try:
+            r = [proxy.strip() for proxy in self.get_proxy_table().text.split("\n")]
+        except:
+            return []
+        return r
 
     def get_proxy_table(self):
         """Get the proxy table"""
@@ -48,9 +63,9 @@ class Proxy:
 # print(next(a))
 # print(next(a))
 # print(next(a))
-# print(a())
-# print(a())
-# print(a())
-# print(a())
-# print(a())
-# print(a())
+# # print(a())
+# # print(a())
+# # print(a())
+# # print(a())
+# # print(a())
+# # print(a())
